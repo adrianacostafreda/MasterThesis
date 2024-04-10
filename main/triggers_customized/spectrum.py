@@ -13,7 +13,7 @@ from scipy.integrate import simps
 Extracts features and saves them in a .csv file.
 """
 
-def bandpower_from_psd(psd, freqs, bands, relative=False):
+def bandpower_from_psd(psd, freqs, bands, dB, relative):
     """Compute the average power of the signal x in a specific frequency band.
 
     Parameters
@@ -56,6 +56,9 @@ def bandpower_from_psd(psd, freqs, bands, relative=False):
 
     # Trim PSD to frequencies of interest
     psd = psd[..., idx_good_freq]
+
+    if dB == True: 
+        psd = 10*np.log10(psd)
     
     # Calculate total power
     total_power = simps(psd, dx=res, axis=-1)
@@ -78,6 +81,75 @@ def bandpower_from_psd(psd, freqs, bands, relative=False):
 
     return bp
 
+def absolutepower_from_psd(psd, freqs, bands, dB, relative):
+    """Compute the average power of the signal x in a specific frequency band.
+
+    Parameters
+    ----------
+    data : 1d-array
+        Input signal in the time-domain.
+    sf : float
+        Sampling frequency of the data.
+    band : list
+        Lower and upper frequencies of the band of interest.
+    window_sec : float
+        Length of each window in seconds.
+        If None, window_sec = (1 / min(band)) * 2
+    relative : boolean
+        If True, return the relative power (= divided by the total power of the signal).
+        If False (default), return the absolute power.
+
+    Return
+    ------
+    bp : float
+        Absolute or relative band power.
+    """
+
+    # Type checks
+    assert isinstance(bands, list), "bands must be a list of tuple(s)"
+    assert isinstance(relative, bool), "relative must be a boolean"
+
+    # Safety checks
+    freqs = np.asarray(freqs)
+    psd = np.asarray(psd)
+    assert freqs.ndim == 1, "freqs must be a 1-D array of shape (n_freqs,)"
+    assert psd.shape[-1] == freqs.shape[-1], "n_freqs must be last axis of psd"
+    
+    # Extract frequencies of interest
+    all_freqs = np.hstack([[b[0], b[1]] for b in bands])
+    fmin, fmax = min(all_freqs), max(all_freqs)
+    idx_good_freq = np.logical_and(freqs >= fmin, freqs <= fmax)
+    freqs = freqs[idx_good_freq]
+    res = freqs[1] - freqs[0]
+
+    # Trim PSD to frequencies of interest
+    psd = psd[..., idx_good_freq]
+
+    if dB == True: 
+        psd = 10*np.log10(psd)
+    
+    # Calculate total power
+    total_power = simps(psd, dx=res, axis=-1)
+    total_power = total_power[np.newaxis, ...]
+
+    # Initialize empty array
+    bp = np.zeros((len(bands), *psd.shape[:-1]), dtype=np.float64)
+
+    # Enumerate over the frequency bands
+    labels = []
+    for i, band in enumerate(bands):
+        b0, b1, la = band
+        labels.append(la)
+        idx_band = np.logical_and(freqs >= b0, freqs <= b1)
+        bp[i] = simps(psd[..., idx_band], dx=res, axis=-1)
+
+    if relative:
+        # If we want to have the bandpower as relative power
+        bp /= total_power
+
+    return bp
+
+
 mne.set_config("MNE_BROWSER_BACKEND", "qt")
 
 path_hc_baseline_eeg="/Users/adriana/Documents/GitHub/MasterThesis/"
@@ -86,10 +158,12 @@ folder_hc_baseline_eeg = os.fsencode(path_hc_baseline_eeg)
 
 # List
 psd_epochs = list()
+psd_epochs_dB = list()
 freqs_list = list()
 
 theta_power_rel_list = list()
 alpha_power_rel_list = list()
+absolute_power_dB_list = list()
 
 for file in os.listdir(folder_hc_baseline_eeg):
     filename = os.fsdecode(file)
@@ -124,12 +198,17 @@ for file in os.listdir(folder_hc_baseline_eeg):
         print('PSD data Check = ', psd.shape)
         print('Check freqs shape = ', freqs.shape)
 
+        # Convert to dB
+        psd_dB = 10*np.log10(psd)
+        psd_mean_dB = psd_dB.mean(axis=-2)[0, :]
+        psd_epochs_dB.append(psd_mean_dB)
 
         # ---------------Bandpower--------------
 
-        bands=[(0.5, 4, "Delta"), (4, 8, "Theta"), (8, 12, "Alpha"), (12, 16, "Sigma"), (16, 30, "Beta")]
+        bands=[(0.5, 4, "Delta"), (5, 7, "Theta"), (8, 15, "Alpha"), (16, 31, "Beta"), (32, 45, "Lower Gamma")]
 
-        bp_relative = bandpower_from_psd(psd, freqs, bands, relative=True)
+        # Relative Power
+        bp_relative = bandpower_from_psd(psd, freqs, bands, dB = False, relative=True)
 
         # Average the psd across all epochs 
         psd_mean = psd.mean(axis=-2)[0, :]
@@ -142,22 +221,31 @@ for file in os.listdir(folder_hc_baseline_eeg):
         #delta_power_rel = bp_relative.mean(axis=-2)[0,:]
         theta_power_rel = bp_relative.mean(axis=-2)[1,0:8] 
         alpha_power_rel = bp_relative.mean(axis=-2)[2,20:26] 
-        #sigma_power_rel = bp_relative.mean(axis=-2)[3,:]
         #beta_power_rel = bp_relative.mean(axis=-2)[4,:]
 
         # Absolute power 
-        bp_absolute = bandpower_from_psd(psd, freqs, bands, relative=False)
+        bp_absolute = bandpower_from_psd(psd, freqs, bands, dB = False, relative=False)
         
         # Average delta, theta, alpha, sigma, beta power across all epochs for frontal channel
         #delta_power_abs = bp_absolute.mean(axis=-2)[0,0:10]
         theta_power_abs = bp_absolute.mean(axis=-2)[1,0:8] 
         alpha_power_abs = bp_absolute.mean(axis=-2)[2,20:26] 
-        #sigma_power_abs = bp_absolute.mean(axis=-2)[3,0:10]
         #beta_power_abs = bp_absolute.mean(axis=-2)[4,0:10]
 
         # Append relative power to list
         theta_power_rel_list.append(theta_power_rel)
         alpha_power_rel_list.append(alpha_power_rel)
+
+        # --------------------------Absolute Power in dB------------------------------------------------
+        # Absolute power 
+        bands=[(0, 50, "Frequency")]
+        absolute_power = absolutepower_from_psd(psd, freqs, bands, dB=True, relative=False)
+        
+        power_dB = absolute_power.mean(axis=-2)[0,:] # average across all channels
+        print("This is the shape of the mean absolute power in dB", power_dB.shape)
+        absolute_power_dB_list.append(power_dB)
+
+
 
 for i in range(len(psd_epochs)):
     plt.plot(freqs_list[0], psd_epochs[i], lw=2)
@@ -170,6 +258,36 @@ plt.title("Welch's periodogram")
 plt.legend(legend_labels)
 plt.show()
 
+for i in range(len(psd_epochs_dB)):
+    plt.plot(freqs_list[0], psd_epochs_dB[i], lw=2)
+    legend_labels = [f"Psd in dB for Back Test {i+1}" for i in range(len(psd_epochs_dB))]
+
+plt.xlabel('Frequency (Hz)')
+plt.ylabel('Power spectral density in dB')
+plt.xlim([0, 50])
+plt.ylim([20,-20])
+plt.title("Welch's periodogram")
+plt.legend(legend_labels)
+plt.show()
+
+# Plot absolute power in dB
+
+freq_array = np.linspace(0,50,len(freqs_list[0]))
+
+for i in range(len(absolute_power_dB_list)):
+    # Interpolate abs_power to match the length of freq_array
+    interp_abs_power_dB = np.interp(freq_array, np.linspace(0, 50, len(absolute_power_dB_list[i])), absolute_power_dB_list[i])
+    plt.plot(freq_array, interp_abs_power_dB)
+    legend_labels = [f"Absolute Power for Back Test {i+1}" for i in range(len(absolute_power_dB_list))]
+# Plotting
+plt.xlabel('Frequency (Hz)')
+plt.ylabel('Absolute Power in dB')
+plt.title('Absolute Power in dB for interpolated frequency')
+plt.legend(legend_labels)
+plt.grid(True)
+plt.show()
+
+"""
 time_array = np.linspace(-0.2, 0.8, len(time))
 
 # Plot Theta relative power versus time
@@ -224,6 +342,7 @@ plt.title('Interpolated Theta & Alpha Relative Power vs Epoched Time')
 plt.legend(legend_labels)
 plt.grid(True)
 plt.show()
+"""
 
 
 

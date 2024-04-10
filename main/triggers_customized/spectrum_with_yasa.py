@@ -62,7 +62,7 @@ def bandpower(data, sf, window, chan, dB, relative):
         bp = yasa.bandpower_from_psd_ndarray(psd, freqs, bands, relative=True) #Relative True -> Relative Power
         np.round(bp,2)
     else:
-        bp = yasa.bandpower_from_psd_ndarray(psd, freqs, bands, relative=False) #Relative True -> Relative Power
+        bp = yasa.bandpower_from_psd_ndarray(psd, freqs, bands, relative=False) #Relative False -> Absolute Power
         np.round(bp,2)
 
 
