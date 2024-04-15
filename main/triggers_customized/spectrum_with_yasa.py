@@ -117,6 +117,12 @@ for file in os.listdir(folder_hc_baseline_eeg):
 
         # Average delta, theta, alpha, sigma, beta power across all epochs for each of the channels
         # numpy arrays
+        delta_power_rel = bp_relative[0].sum(axis=-2)[0,:]
+        theta_power_rel = bp_relative[0].sum(axis=-2)[1,:] 
+        alpha_power_rel = bp_relative[0].sum(axis=-2)[2,:] 
+        sigma_power_rel = bp_relative[0].sum(axis=-2)[3,:]
+        beta_power_rel = bp_relative[0].sum(axis=-2)[4,:]
+
         delta_power_rel = bp_relative[0].mean(axis=-2)[0,:]
         theta_power_rel = bp_relative[0].mean(axis=-2)[1,:] 
         alpha_power_rel = bp_relative[0].mean(axis=-2)[2,:] 
