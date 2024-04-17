@@ -5,11 +5,13 @@ import mne
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 mne.set_config("MNE_BROWSER_BACKEND", "qt")
 
-path_hc_baseline_eeg="/Users/adriana/Documents/GitHub/MasterThesis/"
-#path_hc_baseline_eeg="H:\\Dokumenter\\Visual_Studio\\data_processing_eeg\\.venv\\"
+#path_hc_baseline_eeg="/Users/adriana/Documents/GitHub/MasterThesis/"
+path_hc_baseline_eeg="H:\\Dokumenter\\Visual_Studio\\data_processing_eeg\\.venv\\"
 folder_hc_baseline_eeg = os.fsencode(path_hc_baseline_eeg)
+filenames = list()
 
 psds_mean_list=list()
 freqs_list = list()
@@ -20,6 +22,7 @@ for file in os.listdir(folder_hc_baseline_eeg):
     if filename.endswith(".fif"):
         fname = path_hc_baseline_eeg + filename
         print("This is the filename", fname)
+        filenames.append(filename)
 
         # ---- Epoch ----
         epochs = mne.read_epochs(fname)
@@ -37,9 +40,9 @@ for file in os.listdir(folder_hc_baseline_eeg):
 
         
         epochs_spectrum = epochs.compute_psd(method = "welch", fmin=1, fmax=50)
-        epochs_spectrum
-        epochs_spectrum.plot_topomap(normalize=True)
-        plt.show()
+        #epochs_spectrum
+        #epochs_spectrum.plot_topomap(normalize=True)
+        #plt.show()
 
         mean_spectrum = epochs_spectrum.average()
         psds, freqs = mean_spectrum.get_data(return_freqs=True)
@@ -56,10 +59,10 @@ _, ax = plt.subplots()
 
 for i in range(len(psds_mean_list)):
     ax.plot(freqs_list[0], psds_mean_list[i], lw=2)
-    legend_labels= [f"Psds dB for Back Test {i+1}" for i in range(len(psds_mean_list))]
+    legend_labels= [f"{i}" for i in filenames]
 
 ax.set(
-    title="Welch PSD (eeg)",
+    title="Welch PSD",
     xlabel="Frequency (Hz)",
     ylabel="Power Spectral Density (dB)",
 )

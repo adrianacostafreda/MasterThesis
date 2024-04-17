@@ -73,8 +73,8 @@ def bandpower(data, sf, window, chan, dB, relative):
 
 mne.set_config("MNE_BROWSER_BACKEND", "qt")
 
-path_hc_baseline_eeg="/Users/adriana/Documents/GitHub/MasterThesis/"
-#path_hc_baseline_eeg="H:\\Dokumenter\\Visual_Studio\\data_processing_eeg\\.venv\\"
+#path_hc_baseline_eeg="/Users/adriana/Documents/GitHub/MasterThesis/"
+path_hc_baseline_eeg="H:\\Dokumenter\\Visual_Studio\\data_processing_eeg\\.venv\\with_ICA\\epochs\\"
 
 folder_hc_baseline_eeg = os.fsencode(path_hc_baseline_eeg)
 
@@ -117,12 +117,6 @@ for file in os.listdir(folder_hc_baseline_eeg):
 
         # Average delta, theta, alpha, sigma, beta power across all epochs for each of the channels
         # numpy arrays
-        delta_power_rel = bp_relative[0].sum(axis=-2)[0,:]
-        theta_power_rel = bp_relative[0].sum(axis=-2)[1,:] 
-        alpha_power_rel = bp_relative[0].sum(axis=-2)[2,:] 
-        sigma_power_rel = bp_relative[0].sum(axis=-2)[3,:]
-        beta_power_rel = bp_relative[0].sum(axis=-2)[4,:]
-
         delta_power_rel = bp_relative[0].mean(axis=-2)[0,:]
         theta_power_rel = bp_relative[0].mean(axis=-2)[1,:] 
         alpha_power_rel = bp_relative[0].mean(axis=-2)[2,:] 
@@ -175,11 +169,11 @@ for file in os.listdir(folder_hc_baseline_eeg):
 
 for i in range(len(psd_list)):
     plt.plot(freqs_list[0], psd_list[i])
-    legend_labels = [f"PSD Back Test {i+1}" for i in range(len(psd_list))]
+    legend_labels = ["C1 0-Back","C1 1-Back","C1 2-Back","C1 3-Back","P1 0-Back","P1 1-Back","P1 2-Back","P1 3-Back"]
 
 plt.xlabel("Frequency (Hz)")
 plt.ylabel("Power uV^2/Hz")
-plt.xlim(0, 30)
+plt.xlim(0, 50)
 plt.title("PSD Welch's Method")
 plt.legend(legend_labels)
 plt.show()

@@ -43,10 +43,8 @@ def get_raw_from_xdf(xdf_file_path: str) -> mne.io.Raw:
 
     # Use the preloaded montage
     raw.set_montage(cap_montage)
-    raw.plot_sensors(show_names=True)
 
     raw.set_eeg_reference(ref_channels="average")
-    plt.show()
 
     #raw.plot(block=True)
     #plt.show()
@@ -269,7 +267,7 @@ def epochs_from_raw(raw, raw_0back, raw_1back, raw_2back, raw_3back, raw_baselin
     """
     
     # -----------------AutoReject---------------------------------
-    n_interpolates = np.array([1,4,32])
+    """n_interpolates = np.array([1,4,32])
     consensus_percs = np.linspace(0,1.0,11)
 
     ar = AutoReject(n_interpolates, consensus_percs, thresh_method = "random_search", random_state = 42)
@@ -281,53 +279,42 @@ def epochs_from_raw(raw, raw_0back, raw_1back, raw_2back, raw_3back, raw_baselin
     epochs_baseline_0back_clean, reject_log_0back_baseline = ar.fit_transform(epochs_baseline_0back, return_log = True)
     epochs_baseline_1back_clean, reject_log_1back_baseline = ar.fit_transform(epochs_baseline_1back, return_log = True)
     epochs_baseline_2back_clean, reject_log_2back_baseline = ar.fit_transform(epochs_baseline_2back, return_log = True)
-    epochs_baseline_3back_clean, reject_log_3back_baseline = ar.fit_transform(epochs_baseline_3back, return_log = True)
-    
-    #scalings = dict(eeg=100e-6)
-    #reject_log_0back.plot_epochs(epochs_0back, scalings=scalings)
-    #reject_log_1back.plot_epochs(epochs_1back, scalings=scalings)
-    #reject_log_2back.plot_epochs(epochs_2back, scalings=scalings)
-    #reject_log_3back.plot_epochs(epochs_3back, scalings=scalings)
-    #reject_log_0back_baseline.plot_epochs(epochs_baseline_0back, scalings=scalings)
-    #reject_log_1back_baseline.plot_epochs(epochs_baseline_1back, scalings=scalings)
-    #reject_log_2back_baseline.plot_epochs(epochs_baseline_2back, scalings=scalings)
-    #reject_log_3back_baseline.plot_epochs(epochs_baseline_3back, scalings=scalings)
-    #plt.show()
+    epochs_baseline_3back_clean, reject_log_3back_baseline = ar.fit_transform(epochs_baseline_3back, return_log = True)"""
     
     # -----------------Get-Rejection-Threshold---------------------------------
-    """reject = get_rejection_threshold(epochs_0back_clean, ch_types = "eeg")
-    epochs_0back_clean.drop_bad(reject=reject)
+    reject = get_rejection_threshold(epochs_0back, ch_types = "eeg")
+    epochs_0back.drop_bad(reject=reject)
 
-    reject = get_rejection_threshold(epochs_1back_clean, ch_types = "eeg")
-    epochs_1back_clean.drop_bad(reject=reject)
+    reject = get_rejection_threshold(epochs_1back, ch_types = "eeg")
+    epochs_1back.drop_bad(reject=reject)
 
-    reject = get_rejection_threshold(epochs_2back_clean, ch_types = "eeg")
-    epochs_2back_clean.drop_bad(reject=reject)
+    reject = get_rejection_threshold(epochs_2back, ch_types = "eeg")
+    epochs_2back.drop_bad(reject=reject)
 
-    reject = get_rejection_threshold(epochs_3back_clean, ch_types = "eeg")
-    epochs_3back_clean.drop_bad(reject=reject)
+    reject = get_rejection_threshold(epochs_3back, ch_types = "eeg")
+    epochs_3back.drop_bad(reject=reject)
 
-    reject = get_rejection_threshold(epochs_baseline_0back_clean, ch_types = "eeg")
-    epochs_baseline_0back_clean.drop_bad(reject=reject)
+    reject = get_rejection_threshold(epochs_baseline_0back, ch_types = "eeg")
+    epochs_baseline_0back.drop_bad(reject=reject)
 
-    reject = get_rejection_threshold(epochs_baseline_1back_clean, ch_types = "eeg")
-    epochs_baseline_1back_clean.drop_bad(reject=reject)
+    reject = get_rejection_threshold(epochs_baseline_1back, ch_types = "eeg")
+    epochs_baseline_1back.drop_bad(reject=reject)
 
-    reject = get_rejection_threshold(epochs_baseline_2back_clean, ch_types = "eeg")
-    epochs_baseline_2back_clean.drop_bad(reject=reject)
+    reject = get_rejection_threshold(epochs_baseline_2back, ch_types = "eeg")
+    epochs_baseline_2back.drop_bad(reject=reject)
 
-    reject = get_rejection_threshold(epochs_baseline_3back_clean, ch_types = "eeg")
-    epochs_baseline_3back_clean.drop_bad(reject=reject)"""
+    reject = get_rejection_threshold(epochs_baseline_3back, ch_types = "eeg")
+    epochs_baseline_3back.drop_bad(reject=reject)
 
-    return (epochs_0back_clean, epochs_1back_clean, epochs_2back_clean, epochs_3back_clean, 
-            epochs_baseline_0back_clean, epochs_baseline_1back_clean, epochs_baseline_2back_clean, epochs_baseline_3back_clean)
+    return (epochs_0back, epochs_1back, epochs_2back, epochs_3back, 
+            epochs_baseline_0back, epochs_baseline_1back, epochs_baseline_2back, epochs_baseline_3back)
 
 mne.set_config("MNE_BROWSER_BACKEND", "qt")
 paths = list()
 
 # Read the data hc baseline fnirs
-#path_hc_baseline_eeg = "H:\\Dokumenter\\data_processing\\data_eeg\\patients\\baseline\\"
-path_hc_baseline_eeg="/Users/adriana/Documents/GitHub/MasterThesis/try/"
+path_hc_baseline_eeg = "H:\\Dokumenter\\data_processing\\data_eeg\\healthy_controls\\baseline\\try\\"
+#path_hc_baseline_eeg="/Users/adriana/Documents/GitHub/MasterThesis/try/"
 folder_hc_baseline_eeg = os.fsencode(path_hc_baseline_eeg)
 
 for file in os.listdir(folder_hc_baseline_eeg):
