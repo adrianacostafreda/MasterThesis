@@ -23,18 +23,18 @@ mne.set_log_level('error')
 clean_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean\\"
 
 # Folder where to save the results
-results_foldername = "H:\\Dokumenter\\data_processing\\"
+results_foldername = "H:\\Dokumenter\\data_processing\\Results\\"
 
 exp_folder = 'n_back'
 exp_condition = '0_back'
 
 # Brain regions and their channels
-brain_regions = {'frontal region' : ['AF7', 'AFF5h', 'AFp1', 'AFp2', 'AFF1h', 'AFF2h', 'AF8','AFF6h'],
-                 'central region' : ['FFC1h', 'FFC2h', 'FC3', 'FC4', 'FCC3h', 'FCC1h', 'FCC2h', 'FCC4h'],
-                 'left temporal' : ['FC5', 'FT7', 'TP7'],
-                 'right temporal' : ['FC6', 'FT8', 'TP8'],
-                 'parietal region' : ['CCP3h', 'CCP1h', 'CCP2h', 'CCP4h', 'CP1', 'CP2', 'CPP3h', 'CPP4h'],
-                 'occipital region' : ['P1', 'P2']}
+#brain_regions = {'frontal region' : ['AF7', 'AFF5h', 'AFp1', 'AFp2', 'AFF1h', 'AFF2h', 'AF8','AFF6h'],
+#                 'central region' : ['FFC1h', 'FFC2h', 'FC3', 'FC4', 'FCC3h', 'FCC1h', 'FCC2h', 'FCC4h'],
+#                 'left temporal' : ['FC5', 'FT7', 'TP7'],
+#                 'right temporal' : ['FC6', 'FT8', 'TP8'],
+#                 'parietal region' : ['CCP3h', 'CCP1h', 'CCP2h', 'CCP4h', 'CP1', 'CP2', 'CPP3h', 'CPP4h'],
+#                 'occipital region' : ['P1', 'P2']}
 
 # Power spectra estimation parameters
 psd_params = dict(method='welch', fminmax=[1, 30], window='hamming', window_duration=2,
@@ -45,7 +45,7 @@ fooof_params = dict(peak_width_limits=[1,12], max_n_peaks=float('inf'), min_peak
                     peak_threshold=2.0, aperiodic_mode='fixed')
 
 # Band power of interest
-bands = {'Delta' : [1, 4]}
+bands = {'Theta' : [4, 8]}
 
 # Flattened spectra amplitude scale (linear, log)
 flat_spectr_scale = 'log'
@@ -59,7 +59,7 @@ dir_inprogress = os.path.join(clean_folder, exp_folder, exp_condition)
 file_dirs, subject_names = arrange.read_files(dir_inprogress,'_clean-epo.fif')
 
 # Pre-create results folders for spectral analysis data
-arrange.create_results_folders(exp_folder=exp_folder, results_folder=results_foldername, fooof_2=True)
+arrange.create_results_folders(exp_folder=exp_folder, results_folder=results_foldername, fooof=True)
 
 # Go through all the files (subjects) in the folder
 
@@ -84,7 +84,6 @@ for i in range(len(file_dirs)):
     df_psds_regions = arrange.df_channels_to_regions(df_psds_ch, brain_regions).\
                               reset_index().drop(columns='Subject')
     
-    
     # Loop through all regions of interest
     for region in df_psds_regions.columns:
 
@@ -107,7 +106,7 @@ for i in range(len(file_dirs)):
 
         # Find individual alpha band parameters
         cf, pw, bw, abs_bp, rel_bp = find_ind_band(flatten_spectrum, freqs,
-                                                   bands['Delta'], bw_size=3)
+                                                   bands['Theta'], bw_size=4)
 
         # Set plot styles
         data_kwargs = {'color' : 'black', 'linewidth' : 1.4,
@@ -162,7 +161,7 @@ for i in range(len(file_dirs)):
         plt.suptitle('{} region ({})'.format(region, subject_names[i]))
         plt.tight_layout()
         if savefig == True:
-            plt.savefig(fname='{}/FOOOF/{}/{}_{}_{}_fooof.png'.format(results_foldername, exp_folder,
+            plt.savefig(fname='{}/{}/FOOOF/{}_{}_{}_fooof.png'.format(results_foldername, exp_folder,
                                                                       exp_condition, subject_names[i],
                                                                       region), dpi=300)
         #plt.show()
@@ -173,11 +172,15 @@ for i in range(len(file_dirs)):
         globals()["df_fooof_"+region].loc[globals()["df_fooof_"+region].index[i],'Offset']\
                                                         = fm.get_params('aperiodic_params','offset')
         globals()["df_fooof_"+region].loc[globals()["df_fooof_"+region].index[i],'{} CF'.\
-                        format(list(bands.keys())[0])] = fm.get_params( 'peak_params','CF')
+                        format(list(bands.keys())[0])] = cf
         globals()["df_fooof_"+region].loc[globals()["df_fooof_"+region].index[i],'{} PW'.\
-                        format(list(bands.keys())[0])] = fm.get_params( 'peak_params','PW')
+                        format(list(bands.keys())[0])] = pw
         globals()["df_fooof_"+region].loc[globals()["df_fooof_"+region].index[i],'{} BW'.\
-                        format(list(bands.keys())[0])] = fm.get_params( 'peak_params','BW')
+                        format(list(bands.keys())[0])] = str(bw)
+        globals()["df_fooof_"+region].loc[globals()["df_fooof_"+region].index[i],'{} absolute power'.\
+                        format(list(bands.keys())[0])] = abs_bp
+        globals()["df_fooof_"+region].loc[globals()["df_fooof_"+region].index[i],'{} relative power'.\
+                        format(list(bands.keys())[0])] = rel_bp
         globals()["df_fooof_"+region].loc[globals()["df_fooof_"+region].index[i],'R_2']\
                                                         = fm.get_params('r_squared')
         globals()["df_fooof_"+region].loc[globals()["df_fooof_"+region].index[i],'Error']\
@@ -185,6 +188,6 @@ for i in range(len(file_dirs)):
 
 # Export aperiodic data for all regions
 for region in df_psds_regions.columns:
-    globals()["df_fooof_"+region].to_excel('{}/{}/FOOOF_2/{}_{}_{}_fooof.xlsx'.format(results_foldername, exp_folder, "Delta",
+    globals()["df_fooof_"+region].to_excel('{}/{}/FOOOF/{}_{}_fooof.xlsx'.format(results_foldername, exp_folder,
                                                                                 exp_condition, region))
     display(globals()["df_fooof_"+region])

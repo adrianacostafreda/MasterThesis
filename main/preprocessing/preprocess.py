@@ -316,14 +316,14 @@ os.chdir("H:\Dokumenter\GitHub\MasterThesis\.venv")
 mne.set_log_level('error')
 
 # Folder where to get the raw EEG files
-raw_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\raw\\"
+raw_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\healthy_controls\\baseline\\raw\\"
 
 # Folder where to export the clean epochs files
-clean_folder =  "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean\\"
+clean_folder =  "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean\\healthy_controls\\"
 
 n_back = "n_back"
-
 baseline = "baseline"
+
 
 # Get directories of raw EEG files and set export directory for clean files
 dir_inprogress = os.path.join(raw_folder)

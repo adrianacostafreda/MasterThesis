@@ -141,3 +141,15 @@ def find_ind_band(spectrum, freqs, freq_interest=[4, 8], bw_size=4):
     rel_bp = abs_bp / spectrum.mean()
 
     return cf, pw, bw, abs_bp, rel_bp
+
+def find_bp(spectrum, freqs, bw):
+    # Find bandpower indexes based on the binsize
+    bp_idx = np.logical_and(freqs>=bw[0], freqs<=bw[1])
+
+    # Average the PSD values in these indexes together to get bandpower
+    abs_bp = spectrum[bp_idx].mean()
+
+    # Calculate relative bandpower
+    rel_bp = abs_bp / spectrum.mean()
+
+    return abs_bp, rel_bp

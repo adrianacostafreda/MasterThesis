@@ -94,8 +94,32 @@ def df_channels_to_regions(df_psd_band, brain_regions):
 
     return df_psd_reg_band
 
-def create_results_folders(exp_folder, results_folder='Results', abs_psd=False,
-                           rel_psd=False, fooof = False, fooof_2 = False):
+def read_excel_psd(exp_folder, psd_folder, condition_strsplit='_psd_', verbose=True):
+    """
+    Get all PSD file directories and corresponding bands and experiment conditions.
+
+    Parameters
+    ----------
+    exp_folder: A string with a relative directory to experiment folder (e.g. 'Eyes Closed\Baseline')
+    psd_folder: A string with a relative directory to the results folder (e.g. 'Results\PSD\regions')
+
+    Returns
+    -------
+    dir_inprogress: A string with directory to look for files
+    b_names: A list of strings for frequency bands of the files
+    condition: A list of strings for experiment conditions of the files
+    """
+    dir_inprogress = os.path.join(psd_folder,exp_folder)
+    _, b_names = read_files(dir_inprogress,".xlsx",verbose=verbose)
+
+    condition = [None]*len(b_names)
+    for i in range(len(b_names)):
+        condition[i] = b_names[i].split(condition_strsplit, 1)
+    
+    return [dir_inprogress, b_names, condition]
+
+def create_results_folders(exp_folder, exp_condition, results_folder='Results', abs_psd=False,
+                           rel_psd=False, fooof = False):
     """
     Dummy way to try to pre-create folders for PSD results before exporting them
 
@@ -105,33 +129,27 @@ def create_results_folders(exp_folder, results_folder='Results', abs_psd=False,
     """
     if abs_psd == True:
         try:
-            os.makedirs(os.path.join('{}/{}/Absolute PSD/channels'.format(results_folder, exp_folder)))
+            os.makedirs(os.path.join('{}/{}/Absolute PSD/channels/{}'.format(results_folder, exp_folder, exp_condition)))
         except FileExistsError:
             pass
         try:
-            os.makedirs(os.path.join('{}/{}/Absolute PSD/regions'.format(results_folder, exp_folder)))
+            os.makedirs(os.path.join('{}/{}/Absolute PSD/regions/{}'.format(results_folder, exp_folder, exp_condition)))
         except FileExistsError:
             pass
     
     if rel_psd == True:
         try:
-            os.makedirs(os.path.join('{}/{}/Relative PSD/channels'.format(results_folder, exp_folder)))
+            os.makedirs(os.path.join('{}/{}/Relative PSD/channels/{}'.format(results_folder, exp_folder, exp_condition)))
         except FileExistsError:
             pass
         try:
-            os.makedirs(os.path.join('{}/{}/Relative PSD/regions'.format(results_folder, exp_folder)))
+            os.makedirs(os.path.join('{}/{}/Relative PSD/regions/{}'.format(results_folder, exp_folder, exp_condition)))
         except FileExistsError:
             pass
     
     if fooof== True:
         try:
-            os.makedirs(os.path.join('{}/{}/FOOOF'.format(results_folder, exp_folder)))
-        except FileExistsError:
-            pass
-    
-    if fooof_2== True:
-        try:
-            os.makedirs(os.path.join('{}/{}/FOOOF_2'.format(results_folder, exp_folder)))
+            os.makedirs(os.path.join('{}/{}/FOOOF/{}'.format(results_folder, exp_folder, exp_condition)))
         except FileExistsError:
             pass
     
@@ -139,4 +157,6 @@ def create_results_folders(exp_folder, results_folder='Results', abs_psd=False,
         os.makedirs(os.path.join('{}/{}'.format(results_folder, exp_folder)))
     except FileExistsError:
         pass
+
+
 

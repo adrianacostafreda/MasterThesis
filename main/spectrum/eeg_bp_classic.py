@@ -19,9 +19,9 @@ import basic.arrange_files as arrange
 clean_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean\\"
 
 # Folder where to save the results
-results_foldername = "H:\\Dokumenter\\data_processing\\results\\"
+results_foldername = "H:\\Dokumenter\\data_processing\\Results\\"
 
-exp_folder = 'n_back'
+exp_folder = 'healthy_controls'
 exp_condition = '0_back'
 
 # Band power names and frequency ranges
