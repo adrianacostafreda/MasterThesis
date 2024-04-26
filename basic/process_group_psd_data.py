@@ -1,5 +1,6 @@
 # ========== Packages ==========
-import mne, os
+import mne
+import os
 import pandas as pd
 from basic.arrange_files import read_excel_psd, read_files
 from basic.statistics import apply_stat_test

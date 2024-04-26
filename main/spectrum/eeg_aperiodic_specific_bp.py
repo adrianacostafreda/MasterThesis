@@ -1,5 +1,6 @@
 # Import packages
-import os, mne
+import os
+import mne
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,21 +13,253 @@ from fooof.plts.annotate import plot_annotated_model
 from IPython.display import display
 
 # Import functions
-from signal_processing.spectrum import calculate_psd, find_ind_band
-import basic.arrange_files as arrange
+#from signal_processing.spectrum import calculate_psd, find_ind_band
+#import basic.arrange_files as arrange
+
+def read_files(dir_inprogress,filetype,exclude_subjects=[],verbose=True):
+    """
+    Get all the (EEG) file directories and subject names.
+
+    Parameters
+    ----------
+    dir_inprogress: A string with directory to look for files
+    filetype: A string with the ending of the files we are looking for (e.g. '.xdf')
+
+    Returns
+    -------
+    file_dirs: A list of strings with file directories for all the (EEG) files
+    subject_names: A list of strings with all the corresponding subject names
+    """
+
+    file_dirs = []
+    subject_names = []
+
+    for file in os.listdir(dir_inprogress):
+        if file.endswith(filetype):
+            file_dirs.append(os.path.join(dir_inprogress, file))
+            #subject_names.append(os.path.join(file).removesuffix(filetype))
+            subject_names.append(file[:-len(filetype)])
+
+    try:
+        for excl_sub in exclude_subjects:
+            for i in range(len(subject_names)):
+                if excl_sub in subject_names[i]:
+                    if verbose == True:
+                        print('EXCLUDED SUBJECT: ',excl_sub,'in',subject_names[i],'at',file_dirs[i])
+                    del subject_names[i]
+                    del file_dirs[i]
+                    break
+    except:
+        pass
+    
+    file_dirs = sorted(file_dirs)
+    subject_names = sorted(subject_names)
+
+    if verbose == True:
+        print("Files in {} read in: {}".format(dir_inprogress,len(file_dirs)))
+
+    return [file_dirs, subject_names]
+
+def create_results_folders(exp_folder, exp_condition, exp_condition_nback, results_folder='Results', abs_psd=False,
+                           rel_psd=False, fooof = False):
+    """
+    Dummy way to try to pre-create folders for PSD results before exporting them
+
+    Parameters
+    ----------
+    exp_folder: A string with a relative directory to experiment folder (e.g. 'Eyes Closed\Baseline')
+    """
+    if abs_psd == True:
+        try:
+            os.makedirs(os.path.join('{}/{}/{}/Absolute PSD/channels/{}'.format(results_folder, exp_folder, exp_condition, exp_condition_nback)))
+        except FileExistsError:
+            pass
+        try:
+            os.makedirs(os.path.join('{}/{}/{}/Absolute PSD/regions/{}'.format(results_folder, exp_folder, exp_condition, exp_condition_nback)))
+        except FileExistsError:
+            pass
+    
+    if rel_psd == True:
+        try:
+            os.makedirs(os.path.join('{}/{}/{}/Relative PSD/channels/{}'.format(results_folder, exp_folder, exp_condition, exp_condition_nback)))
+        except FileExistsError:
+            pass
+        try:
+            os.makedirs(os.path.join('{}/{}/{}/Relative PSD/regions/{}'.format(results_folder, exp_folder, exp_condition,exp_condition_nback)))
+        except FileExistsError:
+            pass
+    
+    if fooof== True:
+        try:
+            os.makedirs(os.path.join('{}/{}/{}/FOOOF/{}'.format(results_folder, exp_folder, exp_condition, exp_condition_nback)))
+        except FileExistsError:
+            pass
+    
+    try:
+        os.makedirs(os.path.join('{}/{}'.format(results_folder, exp_folder)))
+    except FileExistsError:
+        pass
+
+def array_to_df(subjectname, epochs, array_channels):
+    """
+    Convert channel-based array to Pandas dataframe with channels' and subjects' names. 
+
+    Parameters
+    ----------
+    fname: the filename 
+    epochs: Epochs-type (MNE-Python) EEG file
+    array_channels: An array with values for each channel 
+
+    Returns
+    df_channels: A dataframe with values for each channel
+
+    """
+    df_channels = pd.DataFrame(array_channels).T
+
+    df_channels.columns = epochs.info.ch_names
+    df_channels['Subject'] = subjectname
+    df_channels.set_index('Subject', inplace = True)
+
+    return df_channels
+
+def df_channels_to_regions(df_psd_band, brain_regions):
+    """
+    Average channels together based on the defined brain regions.
+
+    Parameters
+    ----------
+    df_psd_band: A dataframe with PSD values for each channel per subject
+    brain_regions: A dictionary of brain regions and EEG channels which they contain
+    drop_cols: List of columns which are not channel PSD data
+
+    Returns
+    -------
+    df_psd_reg_band: A dataframe with PSD values for each brain region per subject
+    """
+
+    df_psd_reg_band = pd.DataFrame()
+    for region in brain_regions:
+        df_temp = df_psd_band[brain_regions[region]].copy().mean(axis=1)
+        df_psd_reg_band = pd.concat([df_psd_reg_band, df_temp], axis=1)
+        
+    df_psd_reg_band.columns = brain_regions.keys()
+    df_psd_reg_band.index.name = 'Subject'
+
+    return df_psd_reg_band
+
+def calculate_psd(epochs, subjectname, fminmax=[1,50], method="welch",window="hamming", 
+                  window_duration=2, window_overlap=0.5,zero_padding=3, tminmax=[None,None],
+                  verbose = False, plot = True):
+    """
+    Calculate power spectrum density with FFT/Welch's method and plot the result.
+
+    Parameters
+    ----------
+    epochs: Epochs type (MNE-Python) EEG file
+    fminfmax: The minimum and maximum frequency range for estimating Welch's PSD
+    window: The window type for estimating Welch's PSD
+    window_duration: An integer for the length of the window
+    window_overlap: A float for the percentage of window size for overlap between te windows 
+    zero-padding: A float for coefficient times window size for zero-pads
+    tminmax : A list of first and last timepoint of the epoch to include; uses all epochs by default
+
+
+    Returns
+    -------
+    psds: An array for power spectrum density values 
+    freqs: An array for the corresponding frequencies 
+
+    """
+    # Calculate window size in samples and window size x coefs for overlap and zero-pad
+    window_size = int(epochs.info["sfreq"]*window_duration)
+    n_overlap = int(window_size*window_overlap)
+    n_zeropad = int(window_size*zero_padding)
+
+    # N of samples from signals equals to window size
+    n_per_seg = window_size
+
+    # N of samples for FFT equals N of samples + zero-padding samples
+    n_fft = n_per_seg + n_zeropad
+
+    # Calculate PSD with Welch's method
+    spectrum = epochs.compute_psd(method=method, fmin = fminmax[0], fmax = fminmax[1],
+                                  n_fft=n_fft, n_per_seg=n_per_seg, n_overlap=n_overlap,
+                                  window=window, tmin=tminmax[0], tmax=tminmax[1],
+                                  verbose=False)
+    
+    psds, freqs = spectrum.get_data(return_freqs = True)
+
+    # Unit conversion from V^2/Hz to uV^2/Hz
+    psds = psds*1e12
+
+    # If true, print all the parameters involved in PSD calculation
+    if verbose == True:
+        print("---\nPSD ({}) calculation\n".format(method))
+        print(spectrum)
+        print('Time period:', str(tminmax))
+        print('Window type:', window)
+        print('Window size:', window_size)
+        print('Overlap:', n_overlap)
+        print('Zero-padding:', n_zeropad)
+        print('\nSamples per segment:', n_per_seg)
+        print('Samples for FFT:', n_fft)
+        print('Frequency resolution:', freqs[1]-freqs[0], 'Hz')
+
+    # If true, plot average PSD for all epochs and channels with channel PSDs
+    if plot == True:
+        plt.figure(figsize=(5,3), dpi=100)
+        plt.plot(freqs,np.transpose(psds.mean(axis=(0))),color='black',alpha=0.1)
+        plt.plot(freqs,psds.mean(axis=(0, 1)),color='blue',alpha=1)
+        plt.xlabel('Frequency (Hz)')
+        plt.ylabel('PSD (uV\u00b2/Hz)')
+        plt.title("PSD,{} ({})".format(method, subjectname))
+        plt.xlim(fminmax)
+        plt.ylim(0,None)
+        plt.grid(linewidth=0.2)
+        plt.show()
+
+    return [psds,freqs]
+
+def find_ind_band(spectrum, freqs, freq_interest=[4, 8], bw_size=4):
+    # Get indexes of band of interest
+    freq_interest_idx = np.where(np.logical_and(freqs>=freq_interest[0],
+                        freqs<=freq_interest[1]))
+    
+    # Find maximum amplitude (peak width) in that bandwidth
+    pw = np.max(spectrum[freq_interest_idx])
+
+    # Find center frequency index and value where the peak is
+    cf_idx = np.where(spectrum == pw)
+    cf = float(freqs[cf_idx])
+    
+    # Get bandwidth range for the band np.round(bw[0], 4)
+    bw = [np.round(cf-bw_size/2, 4), np.round(cf+bw_size/2, 4)]
+
+    # Find individual bandpower indexes based on the binsize
+    bp_idx = np.logical_and(freqs>=bw[0], freqs<=bw[1])
+
+    # Average the PSD values in these indexes together to get bandpower
+    abs_bp = spectrum[bp_idx].mean()
+
+    # Calculate relative bandpower
+    rel_bp = abs_bp / spectrum.mean()
+
+    return cf, pw, bw, abs_bp, rel_bp
 
 # Set default directory
-os.chdir("H:\Dokumenter\GitHub\MasterThesis\.venv")
+os.chdir("/Users/adriana/Documents/GitHub/thesis/MasterThesis/")
 mne.set_log_level('error')
 
 # Folder where to get the clean epochs files
-clean_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean\\"
+clean_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/"
 
 # Folder where to save the results
-results_foldername = "H:\\Dokumenter\\data_processing\\Results\\"
+results_foldername = "/Users/adriana/Documents/DTU/thesis/data_processing/Results/"
 
-exp_folder = 'n_back'
-exp_condition = '0_back'
+exp_folder = 'healthy_controls'
+exp_condition = 'n_back'
+exp_condition_nback = '3_back'
+exp_condition_nback_num = 3
 
 # Brain regions and their channels
 brain_regions = {'frontal region' : ['AF7', 'AFF5h', 'AFp1', 'AFp2', 'AFF1h', 'AFF2h', 'AF8','AFF6h'],
@@ -55,11 +288,12 @@ plot_rich = True
 savefig = False
 
 # Get directories of clean EEG files and set export directory
-dir_inprogress = os.path.join(clean_folder, exp_folder, exp_condition)
-file_dirs, subject_names = arrange.read_files(dir_inprogress,'_clean-epo.fif')
+dir_inprogress = os.path.join(clean_folder, exp_folder, exp_condition, exp_condition_nback)
+file_dirs, subject_names = read_files(dir_inprogress,'_clean-epo.fif')
 
 # Pre-create results folders for spectral analysis data
-arrange.create_results_folders(exp_folder=exp_folder, results_folder=results_foldername, fooof=True)
+create_results_folders(exp_folder=exp_folder, results_folder=results_foldername, 
+                       exp_condition_nback=exp_condition_nback, exp_condition=exp_condition, fooof=True)
 
 # Go through all the files (subjects) in the folder
 
@@ -79,9 +313,9 @@ for i in range(len(file_dirs)):
     # Average all epochs together for each channel and also for each region
     psds = psds.mean(axis=(0))
 
-    df_psds_ch = arrange.array_to_df(subject_names[i], epochs, psds).\
+    df_psds_ch = array_to_df(subject_names[i], epochs, psds).\
                          reset_index().drop(columns='Subject')
-    df_psds_regions = arrange.df_channels_to_regions(df_psds_ch, brain_regions).\
+    df_psds_regions = df_channels_to_regions(df_psds_ch, brain_regions).\
                               reset_index().drop(columns='Subject')
     
     # Loop through all regions of interest
@@ -161,8 +395,8 @@ for i in range(len(file_dirs)):
         plt.suptitle('{} region ({})'.format(region, subject_names[i]))
         plt.tight_layout()
         if savefig == True:
-            plt.savefig(fname='{}/{}/FOOOF/{}_{}_{}_fooof.png'.format(results_foldername, exp_folder,
-                                                                      exp_condition, subject_names[i],
+            plt.savefig(fname='{}/{}/{}/FOOOF/{}/{}_{}_fooof.png'.format(results_foldername, exp_folder,
+                                                                      exp_condition, exp_condition_nback, subject_names[i],
                                                                       region), dpi=300)
         #plt.show()
 
@@ -188,6 +422,6 @@ for i in range(len(file_dirs)):
 
 # Export aperiodic data for all regions
 for region in df_psds_regions.columns:
-    globals()["df_fooof_"+region].to_excel('{}/{}/FOOOF/{}_{}_fooof.xlsx'.format(results_foldername, exp_folder,
-                                                                                exp_condition, region))
+    globals()["df_fooof_"+region].to_excel('{}/{}/{}/FOOOF/{}/{}_{}_fooof.xlsx'.format(results_foldername, exp_folder,
+                                                                                exp_condition, exp_condition_nback, exp_condition_nback_num, region))
     display(globals()["df_fooof_"+region])

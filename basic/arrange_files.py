@@ -23,7 +23,8 @@ def read_files(dir_inprogress,filetype,exclude_subjects=[],verbose=True):
     for file in os.listdir(dir_inprogress):
         if file.endswith(filetype):
             file_dirs.append(os.path.join(dir_inprogress, file))
-            subject_names.append(os.path.join(file).removesuffix(filetype))
+            #subject_names.append(os.path.join(file).removesuffix(filetype))
+            subject_names.append(file[:-len(filetype)])
 
     try:
         for excl_sub in exclude_subjects:
@@ -129,27 +130,27 @@ def create_results_folders(exp_folder, exp_condition, results_folder='Results', 
     """
     if abs_psd == True:
         try:
-            os.makedirs(os.path.join('{}/{}/Absolute PSD/channels/{}'.format(results_folder, exp_folder, exp_condition)))
+            os.makedirs(os.path.join('{}/{}/{}/Absolute PSD/channels'.format(results_folder, exp_folder, exp_condition)))
         except FileExistsError:
             pass
         try:
-            os.makedirs(os.path.join('{}/{}/Absolute PSD/regions/{}'.format(results_folder, exp_folder, exp_condition)))
+            os.makedirs(os.path.join('{}/{}/{}/Absolute PSD/regions'.format(results_folder, exp_folder, exp_condition)))
         except FileExistsError:
             pass
     
     if rel_psd == True:
         try:
-            os.makedirs(os.path.join('{}/{}/Relative PSD/channels/{}'.format(results_folder, exp_folder, exp_condition)))
+            os.makedirs(os.path.join('{}/{}/{}/Relative PSD/channels'.format(results_folder, exp_folder, exp_condition)))
         except FileExistsError:
             pass
         try:
-            os.makedirs(os.path.join('{}/{}/Relative PSD/regions/{}'.format(results_folder, exp_folder, exp_condition)))
+            os.makedirs(os.path.join('{}/{}/{}/Relative PSD/regions'.format(results_folder, exp_folder, exp_condition)))
         except FileExistsError:
             pass
     
     if fooof== True:
         try:
-            os.makedirs(os.path.join('{}/{}/FOOOF/{}'.format(results_folder, exp_folder, exp_condition)))
+            os.makedirs(os.path.join('{}/{}/{}/FOOOF'.format(results_folder, exp_folder, exp_condition)))
         except FileExistsError:
             pass
     
