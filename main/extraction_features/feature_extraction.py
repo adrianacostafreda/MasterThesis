@@ -196,11 +196,11 @@ for index, row in df_psd_reg.iterrows():
         features_theta.append(row["Subject"])
         features_theta.append(row["Condition"])
         features_theta.append(row["frontal region"])
-        features_theta.append(row["central region"])
-        features_theta.append(row['left temporal'])
-        features_theta.append(row['right temporal'])
-        features_theta.append(row['parietal region'])
-        features_theta.append(row['occipital region'])
+        #features_theta.append(row["central region"])
+        #features_theta.append(row['left temporal'])
+        #features_theta.append(row['right temporal'])
+        #features_theta.append(row['parietal region'])
+        #features_theta.append(row['occipital region'])
     
     elif row["Frequency band"] == "Alpha":
         features_alpha.append(row["frontal region"])
@@ -211,7 +211,7 @@ for index, row in df_psd_reg.iterrows():
         features_alpha.append(row['occipital region'])
     
     elif row["Frequency band"] == "Delta":
-        features_delta.append(row["left temporal"])
+        #features_delta.append(row["left temporal"])
         features_delta.append(row["right temporal"])
     
     
@@ -224,18 +224,18 @@ features_list_theta = [lst for lst in features_list_theta if lst]
 features_list_delta = [lst for lst in features_list_delta if lst]
 features_list_alpha = [lst for lst in features_list_alpha if lst]
 
-df_theta = pd.DataFrame(features_list_theta, columns =['patient_id', 'n_back', 'theta frontal region', 'theta central region', 'theta left temporal', 'theta right temporal', 'theta parietal region', 'theta occipital region'])
-df_alpha = pd.DataFrame(features_list_alpha, columns =['alpha frontal region', 'alpha central region', 'alpha left temporal', 'alpha right temporal', 'alpha parietal region', 'alpha occipital region'])
-df_delta = pd.DataFrame(features_list_delta, columns =['delta left temporal', 'delta right temporal'])
-df_psd_fooof_frontal = df_psd_fooof_frontal[['Exponent', 'Offset']]
+df_theta = pd.DataFrame(features_list_theta, columns =['patient_id', 'n_back', 'theta frontal region'])
+#df_alpha = pd.DataFrame(features_list_alpha, columns =['alpha frontal region', 'alpha central region', 'alpha left temporal', 'alpha right temporal', 'alpha parietal region', 'alpha occipital region'])
+#df_delta = pd.DataFrame(features_list_delta, columns =['delta right temporal'])
+df_psd_fooof_frontal = df_psd_fooof_frontal[['Exponent']]
 
 # Reset index of df1 and df2
 df_theta.reset_index(drop=True, inplace=True)
-df_delta.reset_index(drop=True, inplace=True)
-df_alpha.reset_index(drop=True, inplace=True)
+#df_delta.reset_index(drop=True, inplace=True)
+#df_alpha.reset_index(drop=True, inplace=True)
 df_psd_fooof_frontal.reset_index(drop=True, inplace=True)
 
-concatenated_df = pd.concat([df_theta, df_alpha, df_delta, df_psd_fooof_frontal], axis = 1)
+concatenated_df = pd.concat([df_theta, df_psd_fooof_frontal], axis = 1)
 
 print(concatenated_df)
 
