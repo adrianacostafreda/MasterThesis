@@ -74,5 +74,5 @@ print("True positive rate: {}".format(tp))
 print("False negative rate: {}".format(fn))
 print("False positive rate: {}".format(fp))
 
-print(np.mean(y_train))
+
 
