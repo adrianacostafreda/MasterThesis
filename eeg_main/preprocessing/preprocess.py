@@ -45,6 +45,8 @@ def get_raw_from_xdf(xdf_file_path: str) -> mne.io.Raw:
     # Use the preloaded montage
     raw.set_montage(cap_montage)
 
+    raw.plot_sensors(show_names=True)
+
     raw.set_eeg_reference(ref_channels="average")
 
     #raw.plot(block=True)
@@ -324,7 +326,6 @@ clean_folder =  "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean\\healthy_cont
 n_back = "n_back"
 baseline = "baseline"
 
-
 # Get directories of raw EEG files and set export directory for clean files
 dir_inprogress = os.path.join(raw_folder)
 export_dir = os.path.join(clean_folder)
@@ -357,7 +358,7 @@ for i in range(len(file_dirs)):
     # --------------Re-referencing EEG channels--------------------------------
     raw.load_data()
     raw = raw.set_eeg_reference(ref_channels="average")
-    
+    """
     # --------------Filtering--------------------------------
     raw_filt = filter_eeg(raw)
 
@@ -404,6 +405,6 @@ for i in range(len(file_dirs)):
 
     except FileExistsError:
         pass
-
+"""
 
 
