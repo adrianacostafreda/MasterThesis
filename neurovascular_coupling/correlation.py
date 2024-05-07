@@ -11,6 +11,9 @@ features_hbo_0back = np.load(path_hbo_0back)
 features_hbr_0back = np.load(path_hbr_0back)
 features_eeg_0back = np.load(path_eeg_0back)
 
+print(features_eeg_0back)
+print(features_hbo_0back)
+
 # We take the mean of the HBO and only 22 patients to match dimensions with the EEG features
 mean_hbo_0back = features_hbo_0back[0:22, :, 0]
 mean_hbo_0back.reshape((22, 8, 1))

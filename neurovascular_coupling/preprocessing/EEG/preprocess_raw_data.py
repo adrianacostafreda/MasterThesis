@@ -3,12 +3,57 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from mnelab.io.xdf import read_raw_xdf
-from autoreject import AutoReject, get_rejection_threshold
+from autoreject import AutoReject
 from pyprep import NoisyChannels
 from mne.preprocessing import ICA
 from mne_icalabel import label_components
 
-from basic.arrange_files import read_files
+#from arrange_files import read_files
+
+def read_files(dir_inprogress,filetype,exclude_subjects=[],verbose=True):
+    """
+    Get all the (EEG) file directories and subject names.
+
+    Parameters
+    ----------
+    dir_inprogress: A string with directory to look for files
+    filetype: A string with the ending of the files we are looking for (e.g. '.xdf')
+
+    Returns
+    -------
+    file_dirs: A list of strings with file directories for all the (EEG) files
+    subject_names: A list of strings with all the corresponding subject names
+    """
+
+    file_dirs = []
+    subject_names = []
+
+    for file in os.listdir(dir_inprogress):
+        if file.endswith(filetype):
+            file_dirs.append(os.path.join(dir_inprogress, file))
+            #subject_names.append(os.path.join(file).removesuffix(filetype))
+            subject_names.append(file[:-len(filetype)])
+
+    try:
+        for excl_sub in exclude_subjects:
+            for i in range(len(subject_names)):
+                if excl_sub in subject_names[i]:
+                    if verbose == True:
+                        print('EXCLUDED SUBJECT: ',excl_sub,'in',subject_names[i],'at',file_dirs[i])
+                    del subject_names[i]
+                    del file_dirs[i]
+                    break
+    except:
+        pass
+    
+    file_dirs = sorted(file_dirs)
+    subject_names = sorted(subject_names)
+
+    if verbose == True:
+        print("Files in {} read in: {}".format(dir_inprogress,len(file_dirs)))
+
+    return [file_dirs, subject_names]
+
 
 """
 
@@ -125,20 +170,21 @@ def repair_artifacts_ICA(raw_filt):
 
 
 # Set default directory
-os.chdir("H:\Dokumenter\GitHub\MasterThesis\.venv")
+#os.chdir("H:\Dokumenter\GitHub\MasterThesis\.venv")
+os.chdir("/Users/adriana/Documents/GitHub/thesis/MasterThesis/")
 mne.set_log_level('error')
 
 # Folder where to get the raw EEG files
-raw_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\healthy_controls\\baseline\\raw\\try\\"
+#raw_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\healthy_controls\\baseline\\raw\\try\\"
+raw_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_eeg/healthy_controls/"
 
 # Folder where to export the clean epochs files
-clean_folder =  "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean\\healthy_controls\\"
-
-n_back = "n_back"
+#clean_folder =  "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean\\healthy_controls\\"
+clean_raw_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/healthy_controls/"
 
 # Get directories of raw EEG files and set export directory for clean files
 dir_inprogress = os.path.join(raw_folder)
-export_dir = os.path.join(clean_folder)
+export_dir = os.path.join(clean_raw_folder)
 
 file_dirs, subject_names = read_files(dir_inprogress,'.xdf')
 
