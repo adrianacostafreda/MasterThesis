@@ -233,9 +233,9 @@ def characterization_trigger_data(raw):
     # Iterate over annotations 
     for idx, desc in enumerate(annot.description):
         if desc in trigger_data:
-            begin_trigger = annot.onset[idx] + 11 # segment the data 11 seconds after the trigger
+            begin_trigger = annot.onset[idx] + 16 # segment the data 11 seconds after the trigger
             print(annot.duration[idx])
-            duration_trigger = annot.duration[idx] + 40 # Durations of the test are 50 seconds
+            duration_trigger = annot.duration[idx] + 34 # Durations of the test are 50 seconds
             end_trigger = begin_trigger + duration_trigger
 
             # in case the file ends before
@@ -255,11 +255,11 @@ def characterization_trigger_data(raw):
     # to set the beginning on Trigger 4, we compute the beginning of Trigger 5 and we subtract the relax
     # period (15s), and the test time (48s) & instructions (8s) of 1-Back Test
     # we add 10 seconds to start the segmentation 10 seconds after the trigger
-    begin_trigger4 = trigger_data["5"]["begin"][0] - 15 - 48 - 8 + 11
+    begin_trigger4 = trigger_data["5"]["begin"][0] - 15 - 48 - 8 + 16
     trigger_data["4"]["begin"].append(begin_trigger4)
-    trigger_data["4"]["duration"].append(38) # Duration of 0-Back Test is 48 s
+    trigger_data["4"]["duration"].append(32) # Duration of 0-Back Test is 48 s
 
-    end_time = trigger_data["4"]["begin"][0] + 38
+    end_time = trigger_data["4"]["begin"][0] + 32
     trigger_data["4"]["end"].append(end_time)
 
     #----------------------------------------------------------------------------------

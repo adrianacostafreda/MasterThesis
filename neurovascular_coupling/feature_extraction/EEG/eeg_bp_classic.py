@@ -176,8 +176,8 @@ clean_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg_e
 
 exp_folder = 'healthy_controls'
 exp_condition = 'n_back'
-exp_condition_nback = '3_back'
-exp_condition_nback_num = 3
+exp_condition_nback = '2_back'
+exp_condition_nback_num = 2
 
 bands=[(0.5, 4, 'Delta'), (4, 8, 'Theta'), (8, 12, 'Alpha'), 
        (12, 16, 'Sigma'), (16, 30, 'Beta')]
@@ -196,6 +196,15 @@ for i in range(len(file_dirs)):
     epochs = mne.read_epochs(fname='{}/{}_clean-epo.fif'.format(dir_inprogress, subject_names[i]),
                                                                 verbose=False)
     
+    channel_drop = [ 'AF7', 'AFF5h', 'FT7', 'FC5', 'FC3', 'FCC3h', 
+                    'CCP3h', 'CCP1h', 'CP1', 'TP7', 'CPP3h', 'P1', 
+                    'AF8', 'AFF6h', 'FT8', 'FC6', 'FC4', 'FCC4h', 'CCP4h', 
+                    'CCP2h', 'CP2', 'P2', 'CPP4h', 'TP8']
+
+    epochs = epochs.drop_channels(channel_drop)
+
+    print("These are the channel names", epochs.ch_names)
+
     # Create a 3-D array
     data = epochs.get_data(units="uV")
     sf = epochs.info['sfreq']
