@@ -9,50 +9,30 @@ from sklearn.model_selection import StratifiedKFold
 class FeatureExtraction():
     """
     """
-    def __init__(self, data_path: str, label_path: str) -> None:
+    def __init__(self, data_path: str) -> None:
         """
         """
-        if (data_path == "" or data_path is None) or (label_path == "" or label_path is None):
-            print("Specify the path of the raw data and the labels.")
+        if (data_path == "" or data_path is None):
+            print("Specify the path of the raw data")
             return None
         
-        self.data = np.load(data_path) # patients X events X channels X samples
-        self.labels = np.load(label_path)
+        self.data = np.load(data_path) # patients x epochs x channels x samples
 
-        self.features = None # patients X events X channels X features
+        self.features = None # patients x channels x features
 
         for id, patient in enumerate(self.data):
 
             # mean of the concentration
-            mean_per_event_per_channel = np.expand_dims(np.mean(patient, axis=2), axis=2) # events x channels X mean
+            mean_per_epoch_per_channel = np.expand_dims(np.mean(patient, axis=2), axis=2) # epochs x channels X mean
             
             # std of the concentration HbO and HbR
-            std_per_event_per_channels = np.expand_dims(np.std(patient, axis=2), axis=2) # events x channels X std
+            std_per_epoch_per_channels = np.expand_dims(np.std(patient, axis=2), axis=2) # epoch x channels X std
 
-            """#Calculate slope for each event for each channel: events X channels X 1 slope
-            slope_per_event_per_channel = list()
-            for iid, event in enumerate(patient):
-                slope_per_event = list()
-                for iiid, channel_data in enumerate(event):
-                    slope_per_event.append(np.polyfit(np.arange(channel_data.shape[0]),channel_data,1)[0])
-                slope_per_event = np.expand_dims( np.array(slope_per_event), axis=1) # channels x 1 
-
-                if iid == 0:
-                    slope_per_event_per_channel = np.expand_dims(slope_per_event,axis=0) # events x channels X 1
-                else:
-                    slope_per_event_per_channel = np.concatenate((slope_per_event_per_channel,np.expand_dims(slope_per_event,axis=0)), axis=0) # events x channels X 1
-            
-            if id == 0:
-                self.features = np.expand_dims(np.concatenate((mean_per_event_per_channel,std_per_event_per_channels,slope_per_event_per_channel), axis=2), axis=0) # 1 x events  x channels x 3 features
-            else:
-                tmp = np.expand_dims(np.concatenate((mean_per_event_per_channel,std_per_event_per_channels,slope_per_event_per_channel), axis=2), axis=0) # patients x events  x channels x 3 features
-                self.features = np.concatenate((self.features, tmp), axis =0)
-            """
             # not include the slope feature
             if id == 0:
-                self.features = np.expand_dims(np.concatenate((mean_per_event_per_channel,std_per_event_per_channels), axis=2), axis=0) # 1 x events  x channels x 2 features (mean & std)
+                self.features = np.expand_dims(np.concatenate((mean_per_epoch_per_channel,std_per_epoch_per_channels), axis=2), axis=0) # 1 x epochs  x channels x 2 features (mean & std)
             else:
-                tmp = np.expand_dims(np.concatenate((mean_per_event_per_channel,std_per_event_per_channels), axis=2), axis=0) # patients x events  x channels x 2 features (mean & std)
+                tmp = np.expand_dims(np.concatenate((mean_per_epoch_per_channel,std_per_epoch_per_channels), axis=2), axis=0) # patients x epochs  x channels x 2 features (mean & std)
                 self.features = np.concatenate((self.features, tmp), axis =0)
 
 
@@ -61,54 +41,101 @@ class FeatureExtraction():
         Get all the data in the form Patients X Events X Channels X Features. And the label/order of the events Patients X Events.
         '''
 
-        return self.features, self.labels
+        return self.features
 
 
-# Paths to your data and labels
-data_path_hbo = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\patients\\hemo_per_event.npy"
-label_path_hbo = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\patients\\event_order_hbo.npy"
+# 0back
+# Paths to your data 
+#data_path_hbo = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\patients\\hemo_per_event.npy"
+#data_path_hbr = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\patients\\dehemo_per_event.npy"
+data_path_hbo_0back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/0_back/hemo_0back.npy"
+data_path_hbr_0back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/0_back/dehemo_0back.npy"
 
 # Create an instance of FeatureExtraction HB0
-feature_extractor_hbo = FeatureExtraction(data_path_hbo, label_path_hbo)
+feature_extractor_hbo_0back = FeatureExtraction(data_path_hbo_0back)
+feature_extractor_hbr_0back = FeatureExtraction(data_path_hbr_0back)
 
 # Get features and labels
-features_hbo, labels_hbo = feature_extractor_hbo.getFeatures()
+features_hbo_0back = feature_extractor_hbo_0back.getFeatures()
+features_hbr_0back = feature_extractor_hbr_0back.getFeatures()
 
-features_hbo_0back = features_hbo[:,0,:,:]
-features_hbo_1back = features_hbo[:,1,:,:]
-features_hbo_2back = features_hbo[:,2,:,:]
-features_hbo_3back = features_hbo[:,3,:,:]
+print("This is the shape of features_hbo_0back", features_hbo_0back.shape)
+print("This is the shape of features_hbr_0back", features_hbr_0back.shape)
 
-data_path_hbr = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\patients\\dehemo_per_event.npy"
-label_path_hbr = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\patients\\event_order_hbr.npy"
+#clean_path = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\features\\patients\\"
+clean_path_features_0back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/features/0_back/"
+np.save(clean_path_features_0back + "features_hbo_0Back", features_hbo_0back)
+np.save(clean_path_features_0back + "features_hbr_0Back", features_hbr_0back)
 
-# Create an instance of FeatureExtraction HBR
-feature_extractor_hbr = FeatureExtraction(data_path_hbr, label_path_hbr)
+
+# 1back
+# Paths to your data 
+#data_path_hbo = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\patients\\hemo_per_event.npy"
+#data_path_hbr = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\patients\\dehemo_per_event.npy"
+data_path_hbo_1back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/1_back/hemo_1back.npy"
+data_path_hbr_1back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/1_back/dehemo_1back.npy"
+
+# Create an instance of FeatureExtraction HB0
+feature_extractor_hbo_1back = FeatureExtraction(data_path_hbo_1back)
+feature_extractor_hbr_1back = FeatureExtraction(data_path_hbr_1back)
 
 # Get features and labels
-features_hbr, labels_hbr = feature_extractor_hbr.getFeatures()
+features_hbo_1back = feature_extractor_hbo_1back.getFeatures()
+features_hbr_1back = feature_extractor_hbr_1back.getFeatures()
 
-features_hbr_0back = features_hbr[:,0,:,:]
-features_hbr_1back = features_hbr[:,1,:,:]
-features_hbr_2back = features_hbr[:,2,:,:]
-features_hbr_3back = features_hbr[:,3,:,:]
+print("This is the shape of features_hbo_1back", features_hbo_1back.shape)
+print("This is the shape of features_hbr_1back", features_hbr_1back.shape)
 
-print(features_hbr_0back.shape)
+#clean_path = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\features\\patients\\"
+clean_path_features_1back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/features/1_back/"
+np.save(clean_path_features_1back + "features_hbo_1Back", features_hbo_1back)
+np.save(clean_path_features_1back + "features_hbr_1Back", features_hbr_1back)
 
-# save the features in numpy arrays
 
-#clean_path = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/"
-clean_path = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\features\\patients\\"
+# 2back
+# Paths to your data 
+#data_path_hbo = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\patients\\hemo_per_event.npy"
+#data_path_hbr = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\patients\\dehemo_per_event.npy"
+data_path_hbo_2back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/2_back/hemo_2back.npy"
+data_path_hbr_2back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/2_back/dehemo_2back.npy"
 
-# HBO
+# Create an instance of FeatureExtraction HB0
+feature_extractor_hbo_2back = FeatureExtraction(data_path_hbo_2back)
+feature_extractor_hbr_2back = FeatureExtraction(data_path_hbr_2back)
 
-np.save(clean_path + "features_hbo_0Back", features_hbo_0back)
-np.save(clean_path + "features_hbo_1Back", features_hbo_1back)
-np.save(clean_path + "features_hbo_2Back", features_hbo_2back)
-np.save(clean_path + "features_hbo_3Back", features_hbo_3back)
+# Get features and labels
+features_hbo_2back = feature_extractor_hbo_2back.getFeatures()
+features_hbr_2back = feature_extractor_hbr_2back.getFeatures()
 
-#HBR
-np.save(clean_path + "features_hbr_0Back", features_hbr_0back)
-np.save(clean_path + "features_hbr_1Back", features_hbr_1back)
-np.save(clean_path + "features_hbr_2Back", features_hbr_2back)
-np.save(clean_path + "features_hbr_3Back", features_hbr_3back)
+print("This is the shape of features_hbo_2back", features_hbo_2back.shape)
+print("This is the shape of features_hbr_2back", features_hbr_2back.shape)
+
+#clean_path = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\features\\patients\\"
+clean_path_features_2back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/features/2_back/"
+np.save(clean_path_features_2back + "features_hbo_2Back", features_hbo_2back)
+np.save(clean_path_features_2back + "features_hbr_2Back", features_hbr_2back)
+
+
+# 3back
+# Paths to your data 
+#data_path_hbo = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\patients\\hemo_per_event.npy"
+#data_path_hbr = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\patients\\dehemo_per_event.npy"
+data_path_hbo_3back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/3_back/hemo_3back.npy"
+data_path_hbr_3back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/3_back/dehemo_3back.npy"
+
+# Create an instance of FeatureExtraction HB0
+feature_extractor_hbo_3back = FeatureExtraction(data_path_hbo_3back)
+feature_extractor_hbr_3back = FeatureExtraction(data_path_hbr_3back)
+
+# Get features and labels
+features_hbo_3back = feature_extractor_hbo_3back.getFeatures()
+features_hbr_3back = feature_extractor_hbr_3back.getFeatures()
+
+print("This is the shape of features_hbo_3back", features_hbo_3back.shape)
+print("This is the shape of features_hbr_3back", features_hbr_3back.shape)
+
+#clean_path = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\features\\patients\\"
+clean_path_features_3back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/features/3_back/"
+np.save(clean_path_features_3back + "features_hbo_3Back", features_hbo_3back)
+np.save(clean_path_features_3back + "features_hbr_3Back", features_hbr_3back)
+

@@ -422,21 +422,24 @@ print("This is the shape of 3back HBR data", data_hbr_3back.shape)
 # Save all the data paths
 
 # Save data path
-clean_path = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/"
+clean_path_0back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/0_back/"
+clean_path_1back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/1_back/"
+clean_path_2back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/2_back/"
+clean_path_3back = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_fNIRS/3_back/"
 #clean_path = "H:\\Dokumenter\\data_processing\\Results_fNIRS\\"
 
 # 0back HBO & HBR
-np.save(clean_path + "hemo_0back", data_hbo_0back) # includes all the events together
-np.save(clean_path + "dehemo_0back", data_hbr_0back) # includes all the events together
+np.save(clean_path_0back + "hemo_0back", data_hbo_0back) 
+np.save(clean_path_0back + "dehemo_0back", data_hbr_0back)
 
 # 1back HBO & HBR
-np.save(clean_path + "hemo_1back", data_hbo_1back) # includes all the events together
-np.save(clean_path + "dehemo_1back", data_hbr_1back) # includes all the events together
+np.save(clean_path_1back + "hemo_1back", data_hbo_1back) 
+np.save(clean_path_1back + "dehemo_1back", data_hbr_1back) 
 
 # 2back HBO & HBR
-np.save(clean_path + "hemo_2back", data_hbo_2back) # includes all the events together
-np.save(clean_path + "dehemo_2back", data_hbr_2back) # includes all the events together
+np.save(clean_path_2back + "hemo_2back", data_hbo_2back) 
+np.save(clean_path_2back + "dehemo_2back", data_hbr_2back) 
 
 # 3back HBO & HBR
-np.save(clean_path + "hemo_3back", data_hbo_3back) # includes all the events together
-np.save(clean_path + "dehemo_3back", data_hbr_3back) # includes all the events together
+np.save(clean_path_3back + "hemo_3back", data_hbo_3back)
+np.save(clean_path_3back + "dehemo_3back", data_hbr_3back) 

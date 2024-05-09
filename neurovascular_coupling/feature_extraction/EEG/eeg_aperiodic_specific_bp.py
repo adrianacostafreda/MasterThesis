@@ -93,6 +93,53 @@ def create_results_folders(exp_folder, exp_condition, exp_condition_nback, resul
     except FileExistsError:
         pass
 
+def calculate_psd(epochs, subjectname, fminmax=[1,50], method="welch",window="hamming", 
+                  window_duration=2, window_overlap=0.5,zero_padding=3, tminmax=[None,None],
+                  verbose = False, plot = True):
+    """
+    Calculate power spectrum density with FFT/Welch's method and plot the result.
+
+    Parameters
+    ----------
+    epochs: Epochs type (MNE-Python) EEG file
+    fminfmax: The minimum and maximum frequency range for estimating Welch's PSD
+    window: The window type for estimating Welch's PSD
+    window_duration: An integer for the length of the window
+    window_overlap: A float for the percentage of window size for overlap between te windows 
+    zero-padding: A float for coefficient times window size for zero-pads
+    tminmax : A list of first and last timepoint of the epoch to include; uses all epochs by default
+
+
+    Returns
+    -------
+    psds: An array for power spectrum density values 
+    freqs: An array for the corresponding frequencies 
+
+    """
+    # Calculate window size in samples and window size x coefs for overlap and zero-pad
+    window_size = int(epochs.info["sfreq"]*window_duration)
+    n_overlap = int(window_size*window_overlap)
+    n_zeropad = int(window_size*zero_padding)
+
+    # N of samples from signals equals to window size
+    n_per_seg = window_size
+
+    # N of samples for FFT equals N of samples + zero-padding samples
+    n_fft = n_per_seg + n_zeropad
+
+    # Calculate PSD with Welch's method
+    spectrum = epochs.compute_psd(method=method, fmin = fminmax[0], fmax = fminmax[1],
+                                  n_fft=n_fft, n_per_seg=n_per_seg, n_overlap=n_overlap,
+                                  window=window, tmin=tminmax[0], tmax=tminmax[1],
+                                  verbose=False)
+    
+    psds, freqs = spectrum.get_data(return_freqs = True)
+
+    # Unit conversion from V^2/Hz to uV^2/Hz
+    psds = psds*1e12
+
+    return [psds, freqs]
+
 def find_ind_band(spectrum, freqs, freq_interest=[4, 8], bw_size=4):
     # Get indexes of band of interest
     freq_interest_idx = np.where(np.logical_and(freqs>=freq_interest[0],
@@ -143,6 +190,7 @@ fooof_params = dict(peak_width_limits=[1,12], max_n_peaks=float('inf'), min_peak
                     peak_threshold=2.0, aperiodic_mode='fixed')
 
 # Band power of interest
+# Band power of interest
 bands = {'Theta' : [4, 8]}
 
 # Flattened spectra amplitude scale (linear, log)
@@ -167,17 +215,22 @@ for i in range(len(file_dirs)):
     epochs = mne.read_epochs(fname='{}/{}_clean-epo.fif'.format(dir_inprogress, subject_names[i]),
                                                                 verbose=False)
 
-    # Create a 3-D array
+    """# Create a 3-D array
     data = epochs.get_data(units="uV")
     sf = epochs.info['sfreq']
 
     win = int(4 * sf)  # Window size is set to 4 seconds
-    freqs, psd = welch(data, sf, nperseg=win, axis=-1)
+    freqs, psd = welch(data, sf, nperseg=win, axis=-1)"""
+
+    # Calculate Welch's power spectrum density (FFT) -> (epochs, channels, freq bins) shape
+    [psds, freqs] = calculate_psd(epochs, subject_names[i], **psd_params, verbose=True, plot=False)
+    
+    print("This is the shape of psds", psds.shape)
+    print("This is the shape of freqs", freqs.shape)
 
     fm = FOOOF(**fooof_params, verbose = True)
-    fm.fit(freqs, psd, psd_params['fminmax'])
+    fm.fit(freqs, psds, psd_params['fminmax'])
     
-   
     # Log-linear conversion based on the chosen amplitude scale
     if flat_spectr_scale == 'linear':
         flatten_spectrum = 10 ** fm._spectrum_flat
@@ -189,7 +242,6 @@ for i in range(len(file_dirs)):
     # Find individual alpha band parameters
     cf, pw, bw, abs_bp, rel_bp = find_ind_band(flatten_spectrum, freqs,
                                                    bands['Theta'], bw_size=4)
-
     
     # Set plot styles
     data_kwargs = {'color' : 'black', 'linewidth' : 1.4,
