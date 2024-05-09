@@ -64,7 +64,7 @@ def read_files(dir_inprogress,filetype,exclude_subjects=[],verbose=True):
     return [file_dirs, subject_names]
 
 def create_results_folders(exp_folder, exp_condition, exp_condition_nback, results_folder='Results', abs_psd=False,
-                           rel_psd=False):
+                           rel_psd=False, fooof = False):
     """
     Dummy way to try to pre-create folders for PSD results before exporting them
 
@@ -83,6 +83,12 @@ def create_results_folders(exp_folder, exp_condition, exp_condition_nback, resul
     if rel_psd == True:
         try:
             os.makedirs(os.path.join('{}/{}/{}/Relative PSD/{}'.format(results_folder, exp_folder, exp_condition, exp_condition_nback)))
+        except FileExistsError:
+            pass
+    
+    if fooof== True:
+        try:
+            os.makedirs(os.path.join('{}/{}/{}/FOOOF/{}'.format(results_folder, exp_folder, exp_condition, exp_condition_nback)))
         except FileExistsError:
             pass
     
@@ -242,7 +248,8 @@ np.save(os.path.join(path_absolute, str(exp_condition_nback_num)), all_subject_b
 
 # Pre-create results folders for spectral analysis data
 create_results_folders(results_folder=results_foldername, exp_folder=exp_folder, exp_condition=exp_condition,
-                       exp_condition_nback=exp_condition_nback, abs_psd=False, rel_psd=True)
+                       exp_condition_nback=exp_condition_nback, abs_psd=False, rel_psd=True,
+                       fooof = False)
 
 path_relative = '{}/{}/{}/Relative PSD/{}/'.format(results_foldername, exp_folder, exp_condition, exp_condition_nback)
 
