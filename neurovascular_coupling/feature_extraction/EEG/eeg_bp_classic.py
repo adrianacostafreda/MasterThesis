@@ -6,13 +6,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import simps
 from scipy.signal import welch
-
 import yasa
+
+from basic.arrange_files import read_files, create_results_folders
 
 from IPython.display import display
 
 # Set default directory
-os.chdir("/Users/adriana/Documents/GitHub/thesis/MasterThesis/")
+#os.chdir("/Users/adriana/Documents/GitHub/thesis/MasterThesis/")
+os.chdir("H:\Dokumenter\GitHub\MasterThesis\.venv")
 mne.set_log_level('error')
 
 # Import functions
@@ -172,12 +174,13 @@ def bandpower_from_psd_ndarray(psd, freqs, band, subjectname,
     return bp
 
 # Folder where to get the clean epochs files
-clean_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg_epoch/"
+#clean_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg_epoch/"
+clean_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_epochs\\coupling_1\\"
 
-exp_folder = 'healthy_controls'
+exp_folder = 'patients'
 exp_condition = 'n_back'
-exp_condition_nback = '2_back'
-exp_condition_nback_num = 2
+exp_condition_nback = '3_back'
+exp_condition_nback_num = 3
 
 bands=[(0.5, 4, 'Delta'), (4, 8, 'Theta'), (8, 12, 'Alpha'), 
        (12, 16, 'Sigma'), (16, 30, 'Beta')]
@@ -241,7 +244,8 @@ all_subject_bandpower_absolute = np.concatenate(all_subject_bandpower_absolute, 
 print(all_subject_bandpower_absolute.shape)
 
 # Save data path
-results_foldername = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_EEG"
+#results_foldername = "/Users/adriana/Documents/DTU/thesis/data_processing/Results_EEG"
+results_foldername = "H:\\Dokumenter\\data_processing\\Results EEG\\coupling_1\\"
 
 # Pre-create results folders for spectral analysis data
 create_results_folders(results_folder=results_foldername, exp_folder=exp_folder, exp_condition=exp_condition,
