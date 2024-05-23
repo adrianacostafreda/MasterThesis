@@ -14,8 +14,8 @@ mne.set_log_level('error')
 #clean_raw_eeg_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_eeg\\healthy_controls\\first_trial\\"
 # raw_fnirs_folder = "H:\\Dokumenter\\data_acquisition\\data_fnirs\\healthy_controls\\baseline\\snirf_files\\first_trial\\"
 
-clean_raw_eeg_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/healthy_controls/extra/"
-raw_fnirs_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/healthy_controls/extra/"
+clean_raw_eeg_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/healthy_controls/"
+raw_fnirs_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/healthy_controls/"
 
 # Get directories of raw EEG files and set export directory for clean files
 eeg_dir_inprogress = os.path.join(clean_raw_eeg_folder)
@@ -45,7 +45,7 @@ from scipy.stats import pearsonr, spearmanr
 
 # I have to read the numpy files in fnirs_features and EEG_bandpower
 
-epoch_duration = 0.4
+epoch_duration = 0.8
 
 """
 eeg
