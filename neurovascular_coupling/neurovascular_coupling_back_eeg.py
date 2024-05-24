@@ -1,4 +1,5 @@
 import mne
+import mne
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -41,8 +42,6 @@ def empty_directory(directory_path):
         # Create the directory if it doesn't exist
         os.makedirs(directory_path)
         print(f'Directory {directory_path} created.')
-
-epoch_duration = 1
 
 def characterization_eeg(raw, epoch_duration):
     
@@ -277,6 +276,7 @@ bands = [(0.5, 4, 'Delta'), (4, 8, 'Theta'), (8, 12, 'Alpha'),
 
 mne.set_config('MNE_BROWSER_BACKEND', 'matplotlib')
 
+epoch_duration = 1
 delay_time = np.arange(0, 10, epoch_duration)
 
 # Healthy controls
@@ -326,7 +326,7 @@ for file_hc in range(len(file_dirs_eeg_hc)):
             #print("This is the shape of bp_relative for hc", bp_relative.shape)
            
             hc_coupling_list.append(bp_relative)
-            print("This is the length of nback list", len(hc_coupling_list))
+            #print("This is the length of nback list", len(coupling_list))
 
         hc_bp_relative_nback.append(hc_coupling_list)
     

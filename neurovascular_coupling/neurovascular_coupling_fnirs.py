@@ -172,14 +172,16 @@ def characterization_fNIRS(raw, epoch_duration):
 
     return fnirs_epochs_coupling
 
-
 #raw_fnirs_folder = "H:\\Dokumenter\\data_acquisition\\data_fnirs\\healthy_controls\\baseline\\snirf_files\\first_trial\\"
-raw_fnirs_folder_hc = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/healthy_controls/"
+clean_raw_fnirs_hc = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/healthy_controls/"
+clean_raw_fnirs_p = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/patients/"
 
 # Get directories of raw EEG files and set export directory for clean files
-fnirs_dir_inprogress_hc = os.path.join(raw_fnirs_folder_hc)
+fnirs_dir_inprogress_hc = os.path.join(clean_raw_fnirs_hc)
+eeg_dir_inprogress_p = os.path.join(clean_raw_fnirs_p)
 
-file_dirs_fnirs_hc, subject_names_fnirs_hc = read_files(fnirs_dir_inprogress_hc,'.snirf')
+file_dirs_fnirs_hc, subjects_hc_fnirs = read_files(fnirs_dir_inprogress_hc,'.snirf')
+file_dirs_fnirs_p, subjects_p_fnirs = read_files(eeg_dir_inprogress_p,'.snirf')
 
 # Healthy controls
 subjects_hc = list()
@@ -215,7 +217,7 @@ for i in range(len(file_dirs_fnirs_hc)):
             concatenated_data.append(raw_data_hbo)
 
         concatenated_hbo = np.concatenate(concatenated_data, axis = 0)
-        print("This is the shape of concatenated_hbo", concatenated_hbo.shape)
+        #print("This is the shape of concatenated_hbo", concatenated_hbo.shape)
 
         # mean of the concentration
         mean_per_epoch_per_channel = np.expand_dims(np.mean(concatenated_hbo, axis=-1), axis=-1) # epochs x channels X mean
@@ -228,7 +230,7 @@ for i in range(len(file_dirs_fnirs_hc)):
         # Concatenate along the last axis to get the shape (epochs, channels, 2)
         mean_std_per_epoch_per_channel = np.concatenate((mean_per_epoch_per_channel, std_per_epoch_per_channel), axis=-1)
 
-        print("This is the shape of mean_std_per_epoch_per_channel", mean_std_per_epoch_per_channel.shape)
+        #print("This is the shape of mean_std_per_epoch_per_channel", mean_std_per_epoch_per_channel.shape)
 
         hc_features_fnirs.append(mean_std_per_epoch_per_channel)
     
@@ -249,178 +251,108 @@ for i in subjects_hc:
 
 delays_hc = [np.concatenate(delay, axis=0) for delay in delays_hc]
 
+#for delay in delays_hc:
+#    print("This is the shape of delay", delay.shape)
+
+hc_mean = list()
 for delay in delays_hc:
-    print("This is the shape of delay", delay.shape)
+    #print("This is the shape", delay.shape)
+    hbo_mean_hc = delay[:, :, : , 0] #(subj, freq band, epochs, channels)
+    hbo_mean_subj_hc = np.mean(hbo_mean_hc, axis=0) # we compute the mean across all subjects 
+    #print("This is the shape of mean_hc", hbo_mean_subj_hc.shape)
+    hbo_mean_channels_hc = np.mean(hbo_mean_subj_hc, axis=-1)
+    #print("This is the shape of mean_channels_hc", hbo_mean_channels_hc.shape)
+    mean_hbo_epochs_hc = np.mean(hbo_mean_channels_hc, axis=0)
+    #print("This is mean_epochs_hc", mean_hbo_epochs_hc)
+    hc_mean.append(mean_hbo_epochs_hc)
 
-    #print("This is the length of hc_data_fnirs", len(hc_data_fnirs))
+#print("This is the length of hc_mean", len(hc_mean))
 
-    ##subjects_hc.append(hc_data_fnirs)
+# PATIENTS
 
-#print("This is the length of subjects_hc", len(subjects_hc))
+subjects_p = list()
+# Loop over all files preprocess them with HemoData and save them at an numpy array.
+# It save the data for each patient, for each event, for each channel:  patient X events X channels X time_samples.
 
-#for subject in subjects_hc:
-#    for coupling in subject:
-        #print("This is the shape of coupling", coupling.shape)
+for i in range(len(file_dirs_fnirs_p)):
 
-"""
+    # --------------Read Raw data -------------------
+    # --------------Preprocess of fNIRS Raw data -------------------
 
+    raw_haemo = HemoData(file_dirs_fnirs_p[i], preprocessing=True, isPloting=False).getMneIoRaw()
+    #raw_haemo.plot(block=True)
 
+    epochs_fnirs_p = characterization_fNIRS(raw_haemo, epoch_duration)
+    #print("This is the list containing the epochs", epochs_fnirs_hc)
 
-# Define a function to extract the numeric part from the filename
-def extract_numeric_part(filename):
-    return int(filename.split('.')[0].split('coupling')[1])
+    p_features_fnirs = list()
 
-# fNIRS extract features 
+    # --------------Extract features-------------------------------- 
+    for coupling_p in epochs_fnirs_p:
+        concatenated_data_p = list()
 
-for subject in subject_names_fnirs:
+        for i in range(len(coupling_p)):
+            #print("This is each segment of the epoched data with delay", coupling[i])
+            
+            raw_data_hbo_p = coupling_p[i].get_data(picks=["hbo"]) # epochs x channels x samples
+            
+            #print("This is the shape for raw_data_hbo", raw_data_hbo.shape)
+            
+            # Append the data array to the list
+            concatenated_data_p.append(raw_data_hbo_p)
 
-    delay_count = 0
+        concatenated_hbo_p = np.concatenate(concatenated_data_p, axis = 0)
+        #print("This is the shape of concatenated_hbo", concatenated_hbo_p.shape)
 
-    fnirs_samples_subject = os.path.join(fnirs_samples, subject)
+        # mean of the concentration
+        p_mean_per_epoch_per_channel = np.expand_dims(np.mean(concatenated_hbo_p, axis=-1), axis=-1) # epochs x channels X mean
+        #print("This is the shape of mean_per_epoch_per_channel", mean_per_epoch_per_channel.shape)
 
-    # Get a list of all files in the folder
-    file_list_fnirs = os.listdir(fnirs_samples_subject)
+        # std of the concentration HbO and HbR
+        p_std_per_epoch_per_channel = np.expand_dims(np.std(concatenated_hbo_p, axis=-1), axis=-1) # epoch x channels X std
+        #print("This is the shape of std_per_epoch_per_channel", std_per_epoch_per_channel.shape)
 
-    # Sort the list using a custom key for numeric sorting
-    file_list_fnirs.sort(key=extract_numeric_part)
+        # Concatenate along the last axis to get the shape (epochs, channels, 2)
+        p_mean_std_per_epoch_per_channel = np.concatenate((p_mean_per_epoch_per_channel, p_std_per_epoch_per_channel), axis=-1)
 
-    # Join the folder path with each file name to get the full path
-    full_paths_fnirs = [os.path.join(fnirs_samples_subject, file_name) for file_name in file_list_fnirs]
-
-    # Extract HBO concentration
-    features_hbo_list = list()
-
-    for full_path in full_paths_fnirs:
-        #print(full_path)
-
-        feature_extractor = FeatureExtraction(full_path)
-        features_hbo = feature_extractor.getFeatures() # numpy array
-        #print("Printing features HBO numpy shape", features_hbo.shape)
-
-        features_hbo_list.append(features_hbo)
-             
-    for feature in features_hbo_list:
-        #print("This is the feature shape", feature.shape)
-
-        path_fnirs_features = '{}/{}/'.format(fnirs_features, subject)
-        os.makedirs(path_fnirs_features, exist_ok=True)
-
-        np.save(path_fnirs_features + "coupling" + str(delay_count), feature)
-
-        delay_count = delay_count + 1 
-
-
-#Correlation analysis for one subject
-
-import scipy
-from scipy.stats import pearsonr, spearmanr
-
-# I have to read the numpy files in fnirs_features and EEG_bandpower
-
-#eeg
-
-print("This is the subject EEG we are evaluating", subject_names_eeg[1])
-
-subject_names_eeg_corr = subject_names_eeg[1]
-
-eeg_bp_subject = os.path.join(eeg_bandpower, subject_names_eeg_corr)
-
-# Get a list of all files in the folder
-file_list_eeg_features = os.listdir(eeg_bp_subject)
-
-file_list_eeg_features.sort(key=extract_numeric_part)
-
-# Filter the list to only include NumPy files
-numpy_files_eeg_features = [file_eeg for file_eeg in file_list_eeg_features if file_eeg.endswith('.npy')]
-
-# Join the folder path with each file name to get the full path
-full_paths_eeg_features = [os.path.join(eeg_bp_subject, file_name_eeg) for file_name_eeg in numpy_files_eeg_features]
-
-corr_features_eeg = list()
-for full_path_eeg in full_paths_eeg_features:
-    #print(full_path_eeg)
-
-    features_eeg = np.load(full_path_eeg)
-    #print("These is the size of the features", features_eeg.shape)
-
-    theta = features_eeg[1 , : , :] #(freq band, epochs, channels)
-
-    mean_channels_theta = np.mean(theta, axis=-1)  # shape: (epochs,)
-
-    corr_features_eeg.append(mean_channels_theta)
-
-#fnirs
-
-print("This is the subject fNIRS we are evaluating", subject_names_fnirs[1])
-
-subject_names_fnirs_corr = subject_names_fnirs[1]
-
-fnirs_hbo_subject = os.path.join(fnirs_features, subject_names_fnirs_corr)
-
-# Get a list of all files in the folder
-file_list_fnirs_features = os.listdir(fnirs_hbo_subject)
-
-file_list_fnirs_features.sort(key=extract_numeric_part)
-
-# Filter the list to only include NumPy files
-numpy_files_fnirs_features = [file_fnirs for file_fnirs in file_list_fnirs_features if file_fnirs.endswith('.npy')]
-
-# Join the folder path with each file name to get the full path
-full_paths_fnirs_features = [os.path.join(fnirs_hbo_subject, file_name_fnirs) for file_name_fnirs in numpy_files_fnirs_features]
-
-corr_features_fnirs = list()
-
-for full_path_fnirs in full_paths_fnirs_features:
-    #print(full_path_fnirs)
-
-    features_fnirs = np.load(full_path_fnirs)
-    #print("These is the size of the features", features_fnirs.shape)
-
-    mean_hbo = features_fnirs[:, 0:4, 0] # (epochs, channels, feature)
-
-    mean_channels_hbo = np.mean(mean_hbo, axis=-1)  # shape: (epochs,)
-
-    corr_features_fnirs.append(mean_channels_hbo)
-
-#print("This is the length of corr_features_eeg", len(order_corr_features_fnirs))
-
-correlation_list = list()
-p_value_list = list()
-
-for fnirs_hbo, eeg_theta in zip(corr_features_fnirs, corr_features_eeg):
-    #print("This is the shape for the corr FNIRS features which includes the epochs", fnirs_hbo.shape)
-    #print("This is the shape for the corr EEG features which includes the epochs", eeg_theta.shape)
+        p_features_fnirs.append(p_mean_std_per_epoch_per_channel)
     
-    # Calculate correlation
-    correlation, p_value = pearsonr(fnirs_hbo, eeg_theta)
-    #print("Correlation coefficient:", correlation)
-    #print("P-value:", p_value)
-    correlation_list.append(correlation)
-    p_value_list.append(p_value)
+    coupling_fnirs_p_list = list()
+    for coupling_fnirs_p in p_features_fnirs:
+        
+        coupling_fnirs_p = np.expand_dims(coupling_fnirs_p, axis=0)
+        coupling_fnirs_p_list.append(coupling_fnirs_p)
 
-#print("This is the length of correlation", len(correlation_list))
-#print("This is the length of pvalue", len(p_value_list))
+    subjects_p.append(coupling_fnirs_p_list)
 
-delay = np.arange(0, 10, epoch_duration)
+delays_p = [list() for _ in range(10)]
 
-# Crear una figura con subplots
-fig, ax = plt.subplots(2, 1, figsize=(10, 8))
+for i in subjects_p:
+    for j in range(10):
+        delays_p[j].append(i[j])
 
-# Primer subplot: pearson r correlation
-ax[0].plot(delay, correlation_list)
-ax[0].set_title("Pearson r Correlation")
-ax[0].set_xlabel("Delay")
-ax[0].set_ylabel("Correlation")
+delays_p = [np.concatenate(delay_p, axis=0) for delay_p in delays_p]
 
-# Segundo subplot: p-values correlation
-ax[1].plot(delay, p_value_list)
-ax[1].set_title("P-values Correlation")
-ax[1].set_xlabel("Delay")
-ax[1].set_ylabel("P-value")
+#for delay_p in delays_p:
+    #print("This is the shape of delay", delay_p.shape)
 
-# Ajustar el layout para evitar superposición
-plt.tight_layout()
+p_mean = list()
+for delay_p in delays_p:
+    #print("This is the shape", delay.shape)
+    hbo_mean_p = delay_p[:, :,: , 0] #(subj, freq band, epochs, channels)
+    hbo_mean_subj_p = np.mean(hbo_mean_p, axis=0) # we compute the mean across all subjects 
+    #print("This is the shape of mean_p", hbo_mean_subj_p.shape)
+    hbo_mean_channels_p = np.mean(hbo_mean_subj_p, axis=-1)
+    #print("This is the shape of mean_channels_p", hbo_mean_channels_p.shape)
+    mean_hbo_epochs_p = np.mean(hbo_mean_channels_p, axis=0)
+    #print("This is mean_epochs_p", mean_hbo_epochs_p)
+    p_mean.append(mean_hbo_epochs_p)
 
-# Mostrar la figura
+#print("This is the length of hc_mean", len(p_mean))
+
+plt.plot(delay_time, p_mean, label="patients")
+plt.plot(delay_time, hc_mean, label = "healthy")
+plt.xlabel("delay")
+plt.ylabel("hbo concentration")
+plt.legend()
 plt.show()
-"""
