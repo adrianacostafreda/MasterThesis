@@ -32,7 +32,7 @@ Characterize data
 """
 
 # Function to characterize EEG data
-def characterization_eeg(raw, epoch_duration):
+def characterization_eeg(raw, delay, epoch_duration):
     
     # Dictionary to store trigger data
     trigger_data = {
@@ -123,7 +123,7 @@ def characterization_eeg(raw, epoch_duration):
 
     # make a 10 s delay
 
-    delay = np.arange(0 + epoch_duration, 10 + epoch_duration, epoch_duration)
+    print("This is the length of delay", len(delay))
 
     for i in delay:
         #print("This is the number", i)
@@ -151,7 +151,7 @@ def characterization_eeg(raw, epoch_duration):
 
     return eeg_epochs_coupling
 
-def characterization_fNIRS(raw, epoch_duration):
+def characterization_fNIRS(raw, delay, epoch_duration):
     
     # Dictionary to store trigger data
     trigger_data = {
@@ -234,7 +234,6 @@ def characterization_fNIRS(raw, epoch_duration):
     fnirs_epochs_coupling = list()
 
     #delay = np.arange(epoch_duration, 10 + epoch_duration, epoch_duration)
-    delay = np.arange(0 + epoch_duration, 10 + epoch_duration, epoch_duration)
 
     # make a 10 s delay
     for i in delay:
@@ -303,12 +302,12 @@ Process data
 
 # EEG
 
-def process_eeg(file_dirs_eeg, bands, epoch_duration):
+def process_eeg(file_dirs_eeg, bands, epoch_duration, samples):
     subjects = []
     for file in file_dirs_eeg:
         raw = mne.io.read_raw_fif(file)
         raw.load_data()
-        epochs = characterization_eeg(raw, epoch_duration)
+        epochs = characterization_eeg(raw, delay_eeg, epoch_duration)
         
         bp_relative = []
         for coupling in epochs:
@@ -328,20 +327,20 @@ def process_eeg(file_dirs_eeg, bands, epoch_duration):
         coupling_data = [np.expand_dims(bp, axis=0) for bp in bp_relative]
         subjects.append(coupling_data)
 
-    delays = [np.concatenate([s[j] for s in subjects], axis=0) for j in range(10)]
+    delays = [np.concatenate([s[j] for s in subjects], axis=0) for j in range(samples)]
 
-    #for delay in delays:
-    #    print("This is the shape of the delay", delay.shape)
+    for delay in delays:
+        print("This is the shape of the delay EEG", delay.shape)
 
     return delays
 
 # fNIRS
 
-def process_fnirs_data(file_dirs_fnirs, epoch_duration):
+def process_fnirs_data(file_dirs_fnirs, epoch_duration, samples):
     subjects = []
     for file_dir in file_dirs_fnirs:
         raw_haemo = HemoData(file_dir, preprocessing=True, isPloting=False).getMneIoRaw()
-        epochs_fnirs = characterization_fNIRS(raw_haemo, epoch_duration)
+        epochs_fnirs = characterization_fNIRS(raw_haemo, delay_fnirs, epoch_duration)
 
         features_fnirs = []
         for coupling in epochs_fnirs:
@@ -352,7 +351,10 @@ def process_fnirs_data(file_dirs_fnirs, epoch_duration):
             features_fnirs.append(np.expand_dims(mean_std_per_epoch_per_channel, axis=0))
         subjects.append(features_fnirs)
 
-    delays = [np.concatenate([subject[j] for subject in subjects], axis=0) for j in range(10)]
+    delays = [np.concatenate([subject[j] for subject in subjects], axis=0) for j in range(samples)]
+
+    for delay in delays:
+        print("This is the shape of the delay fNIRS", delay.shape)
 
     return delays
 
@@ -379,21 +381,30 @@ file_dirs_fnirs_p, _ = read_files(clean_raw_fnirs_p, '.snirf')
 bands = [(0.5, 4, 'Delta'), (4, 8, 'Theta'), (8, 12, 'Alpha'), 
          (12, 16, 'Sigma'), (16, 30, 'Beta')]
 
-epoch_duration = 1
-delay_time = np.arange(0, 10, epoch_duration)
+epoch_duration = 0.4
+end_time = 15
+
+delay_time = np.arange(0, end_time, epoch_duration)
+
+delay_eeg = np.arange(0 + epoch_duration, end_time + epoch_duration, epoch_duration)
+delay_fnirs = np.arange(0 + epoch_duration, end_time + epoch_duration, epoch_duration)
+
+samples_eeg = len(delay_eeg)
+samples_fnirs = len(delay_fnirs)
+
 
 """
 EEG
 """
-eeg_delays_hc = process_eeg(file_dirs_eeg_hc, bands, epoch_duration)
-eeg_delays_p = process_eeg(file_dirs_eeg_p, bands, epoch_duration)
+eeg_delays_hc = process_eeg(file_dirs_eeg_hc, bands, epoch_duration, samples_eeg)
+eeg_delays_p = process_eeg(file_dirs_eeg_p, bands, epoch_duration, samples_eeg)
 
 """
 fNIRS
 """
 
-fnirs_delays_hc = process_fnirs_data(file_dirs_fnirs_hc, epoch_duration)
-fnirs_delays_p = process_fnirs_data(file_dirs_fnirs_p, epoch_duration)
+fnirs_delays_hc = process_fnirs_data(file_dirs_fnirs_hc, epoch_duration, samples_fnirs)
+fnirs_delays_p = process_fnirs_data(file_dirs_fnirs_p, epoch_duration, samples_fnirs)
 
 """
 
