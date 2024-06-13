@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 from scipy.integrate import simps
 from scipy.signal import welch
 import mne
-from arrange_files import read_files
-from Hemo import HemoData
+from basic.arrange_files import read_files
+from neurovascular_coupling.Hemo import HemoData
 
 """
 
@@ -119,6 +119,8 @@ def characterization_eeg(raw, epoch_duration):
     Returns a mne.Epochs object created from the annotated mne.io.Raw object.
 
     """
+
+    
 
     eeg_epochs_coupling = list()
 
@@ -391,8 +393,8 @@ def process_eeg(file_dirs, epoch_duration, bands):
                                        'CCP4h', 'CCP2h', 'CP2', 'P2', 'CPP4h', 'TP8'])
                 data = segment.get_data(units="uV")
                 sf = segment.info['sfreq']
-                
-                freqs, psd = welch(data, sf, nperseg=256, noverlap=0.5*256)
+                win = int(4 * sf)
+                freqs, psd = welch(data, sf, nperseg=win)
                 bp_relative = bandpower_from_psd_ndarray(psd, freqs, bands, ln_normalization=False, relative=True)
                 coupling_list.append(bp_relative)
             bp_relative_nback.append(coupling_list)
@@ -408,7 +410,6 @@ def process_eeg(file_dirs, epoch_duration, bands):
 def process_fnirs(file_dirs, epoch_duration):
     subjects = []
     for file in file_dirs:
-        
         raw_haemo = HemoData(file, preprocessing=True, isPloting=False).getMneIoRaw()
         epochs_fnirs = characterization_fNIRS(raw_haemo, epoch_duration)
 
@@ -465,14 +466,20 @@ def extract_delays(concatenated_by_delay):
 
 
 # Main Execution
-os.chdir("/Users/adriana/Documents/GitHub/thesis")
+#os.chdir("/Users/adriana/Documents/GitHub/thesis")
+os.chdir("H:\Dokumenter\GitHub\MasterThesis\.venv")
 mne.set_log_level('error')
 mne.set_config('MNE_BROWSER_BACKEND', 'matplotlib')
 
-clean_raw_eeg_hc = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/healthy_controls/"
-clean_raw_eeg_p = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/patients/"
-clean_raw_fnirs_hc = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/healthy_controls/"
-clean_raw_fnirs_p = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/patients/"
+#clean_raw_eeg_hc = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/healthy_controls/"
+#clean_raw_eeg_p = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/patients/"
+#clean_raw_fnirs_hc = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/healthy_controls/"
+#clean_raw_fnirs_p = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/patients/"
+
+clean_raw_eeg_hc = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_eeg\\healthy_controls\\"
+clean_raw_eeg_p = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_eeg\\patients\\"
+clean_raw_fnirs_hc = "H:\\Dokumenter\\data_acquisition\\data_fnirs\\healthy_controls\\baseline\\snirf_files\\"
+clean_raw_fnirs_p = "H:\\Dokumenter\\data_acquisition\\data_fnirs\\patients\\baseline\\snirf_files\\"
 
 file_dirs_eeg_hc, _ = read_files(clean_raw_eeg_hc, '.fif')
 file_dirs_eeg_p, _ = read_files(clean_raw_eeg_p, '.fif')
@@ -571,27 +578,25 @@ def compute_and_plot_correlations(eeg_delays, fnirs_delays, delay_time, title_su
     for i, title in enumerate(titles):
         plt.figure(figsize=(14, 6))
 
-        plt.subplot(2, 1, 1)
+        #plt.subplot(2, 1, 1)
         for subject_idx in range(correlation_results.shape[-1]):
             plt.plot(delay_time, correlation_results[i, :, subject_idx], label=f"Subject {subject_idx + 1}")
         plt.xlabel("Time Delay")
         plt.ylabel("Pearson Correlation Coefficient")
         plt.title(f"Pearson Correlation Coefficients vs. Time Delays for Each Subject ({title_suffix})")
-        plt.legend()
+        
 
-        plt.subplot(2, 1, 2)
-        for subject_idx in range(p_values.shape[-1]):
-            plt.plot(delay_time, p_values[i, :, subject_idx], label=f"Subject {subject_idx + 1}")
-        plt.xlabel("Time Delay")
-        plt.ylabel("p-value")
-        plt.title(f"p-values vs. Time Delays for Each Subject ({title_suffix})")
-        plt.legend()
+        #plt.subplot(2, 1, 2)
+        #for subject_idx in range(p_values.shape[-1]):
+        #    plt.plot(delay_time, p_values[i, :, subject_idx], label=f"Subject {subject_idx + 1}")
+        #plt.xlabel("Time Delay")
+        #plt.ylabel("p-value")
+        #plt.title(f"p-values vs. Time Delays for Each Subject ({title_suffix})")
+        
 
         plt.suptitle(title, y=1.02)
         plt.tight_layout()
         plt.show()
-
-def plot_theta_power(eeg_delay)
 
 compute_and_plot_correlations(eeg_delays_hc, fnirs_delays_hc, delay_time, "Healthy Controls")
 compute_and_plot_correlations(eeg_delays_p, fnirs_delays_p, delay_time, "Patients")

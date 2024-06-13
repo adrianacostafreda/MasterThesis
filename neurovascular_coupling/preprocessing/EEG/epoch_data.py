@@ -2,6 +2,7 @@ import mne
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from autoreject import AutoReject,get_rejection_threshold
 
 from basic.arrange_files import read_files
 
@@ -39,10 +40,10 @@ def characterization_trigger_data(raw):
 
     # Determine the start of trigger 4
     # to set the beginning on Trigger 4, we compute the beginning of Trigger 5 and we subtract the relax
-    # period (15s), and the test time (48s) & instructions (8s) of 1-Back Test
+    # period (15s), and the test time (48s) & instructions (4s) of 1-Back Test
     # we add 10 seconds to start the segmentation 10 seconds after the trigger
 
-    begin_trigger4 = trigger_data["5"]["begin"][0] - 15 - 48 - 8
+    begin_trigger4 = trigger_data["5"]["begin"][0] - 15 - 48 - 4
     trigger_data["4"]["begin"].append(begin_trigger4)
     trigger_data["4"]["duration"].append(48) # Duration of 0-Back Test is 48 s
 
@@ -104,10 +105,29 @@ def epochs_from_raw(raw, raw_0back, raw_1back, raw_2back, raw_3back):
     epochs_2back = mne.Epochs(raw_2back, events_2back, baseline=interval, preload=True)
     epochs_3back = mne.Epochs(raw_3back, events_3back, baseline=interval, preload=True)
     
-    print(epochs_0back)
-    print(epochs_1back)
-    print(epochs_2back)
-    print(epochs_3back)
+    # -----------------Get-Rejection-Threshold---------------------------------
+    reject = get_rejection_threshold(epochs_0back, ch_types = "eeg")
+    epochs_0back.drop_bad(reject=reject)
+
+    reject = get_rejection_threshold(epochs_1back, ch_types = "eeg")
+    epochs_1back.drop_bad(reject=reject)
+
+    reject = get_rejection_threshold(epochs_2back, ch_types = "eeg")
+    epochs_2back.drop_bad(reject=reject)
+
+    reject = get_rejection_threshold(epochs_3back, ch_types = "eeg")
+    epochs_3back.drop_bad(reject=reject)
+
+    # -----------------AutoReject---------------------------------
+    #n_interpolates = np.array([1,4,32])
+    #consensus_percs = np.linspace(0,1.0,11)
+
+    #ar = AutoReject(n_interpolates, consensus_percs, cv=5, thresh_method = "random_search", random_state = 42)
+
+    #epochs_0back_clean, reject_log_0back = ar.fit_transform(epochs_0back, return_log = True)
+    #epochs_1back_clean, reject_log_1back = ar.fit_transform(epochs_1back, return_log = True)
+    #epochs_2back_clean, reject_log_2back = ar.fit_transform(epochs_2back, return_log = True)
+    #epochs_3back_clean, reject_log_3back = ar.fit_transform(epochs_3back, return_log = True)
 
     return (epochs_0back, epochs_1back, epochs_2back, epochs_3back)
 
@@ -120,7 +140,7 @@ clean_raw_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_eeg\\patie
 #clean_raw_folder =  "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/healthy_controls/"
 
 # Folder where to export the clean epochs files
-clean_epoch_folder =  "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_epochs\\coupling_8\\patients\\"
+clean_epoch_folder =  "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_epochs\\patients\\"
 #clean_epoch_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg_epoch/healthy_controls/"
 
 n_back = "n_back"
@@ -169,7 +189,6 @@ for i in range(len(file_dirs)):
                 fname = '{}/{}/{}_{}back_clean-epo.fif'.format(export_dir, n_back, subject_names[i], count)
                 j.save(fname, overwrite=True)
                 count = count+1
-
 
     except FileExistsError:
         pass

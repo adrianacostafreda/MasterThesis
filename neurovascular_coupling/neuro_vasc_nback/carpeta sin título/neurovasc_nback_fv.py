@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 from scipy.integrate import simps
 from scipy.signal import welch
 import mne
-from arrange_files import read_files
-from Hemo import HemoData
+from basic.arrange_files import read_files
+from neurovascular_coupling.Hemo import HemoData
+from autoreject import AutoReject, get_rejection_threshold
 
 """
 
@@ -32,6 +33,21 @@ def empty_directory(directory_path):
         # Create the directory if it doesn't exist
         os.makedirs(directory_path)
         print(f'Directory {directory_path} created.')
+
+# Function to visualize dropped epochs
+def visualize_dropped_epochs(epochs):
+
+    dropped_epochs_indices = []
+
+    # Step 4: Retrieve the indices of the dropped epochs
+    dropped_epochs_indices = epochs.drop_log
+
+    # Convert the drop_log to a list of indices of dropped epochs
+    dropped_indices = [i for i, log in enumerate(dropped_epochs_indices) if len(log) > 0]
+
+    dropped_epochs_indices.append(dropped_indices)
+    
+    return dropped_epochs_indices
 
 """
 
@@ -121,6 +137,7 @@ def characterization_eeg(raw, epoch_duration):
     """
 
     eeg_epochs_coupling = list()
+    eeg_bad_epochs = []
 
     # make a 10 s delay
     delay = np.arange(0 + epoch_duration, 10 + epoch_duration, epoch_duration)
@@ -130,45 +147,69 @@ def characterization_eeg(raw, epoch_duration):
     epochs_2back_list = list()
     epochs_3back_list = list()
 
+    bad_epoch_0back_list = []
+    bad_epoch_1back_list = []
+    bad_epoch_2back_list = []
+    bad_epoch_3back_list = []
+
     for i in delay:
         events_0back = mne.make_fixed_length_events(raw_0back, start = 0 , stop = 58 + epoch_duration - i, duration = epoch_duration)
         
         interval = (0,0)
         epochs_0back = mne.Epochs(raw_0back, events_0back, baseline = interval, preload = True)
+
+        reject_thresholds_0back = get_rejection_threshold(epochs_0back, ch_types = "eeg", verbose = False)
+        bad_epoch_0back = visualize_dropped_epochs(epochs_0back)
+
         epochs_0back_list.append(epochs_0back)
+        bad_epoch_0back_list.append(bad_epoch_0back)
 
     for i in delay:
         events_1back = mne.make_fixed_length_events(raw_1back, start = 0 , stop = 70 + epoch_duration - i, duration = epoch_duration)
 
         interval = (0,0)
         epochs_1back = mne.Epochs(raw_1back, events_1back, baseline = interval, preload = True)
+        reject_thresholds_1back = get_rejection_threshold(epochs_1back, ch_types = "eeg", verbose = False)
+        bad_epoch_1back = visualize_dropped_epochs(epochs_1back)
+
         epochs_1back_list.append(epochs_1back)
+        bad_epoch_1back_list.append(bad_epoch_1back)
 
     for i in delay:
         events_2back = mne.make_fixed_length_events(raw_2back, start = 0 , stop = 70 + epoch_duration - i, duration = epoch_duration)
 
         interval = (0,0)
         epochs_2back = mne.Epochs(raw_2back, events_2back, baseline = interval, preload = True)
+        reject_thresholds_2back = get_rejection_threshold(epochs_2back, ch_types = "eeg", verbose = False)
+        bad_epoch_2back = visualize_dropped_epochs(epochs_2back)
+
         epochs_2back_list.append(epochs_2back)
+        bad_epoch_2back_list.append(bad_epoch_2back)
 
     for i in delay:
         events_3back = mne.make_fixed_length_events(raw_3back, start = 0 , stop = 60 + epoch_duration - i, duration = epoch_duration)
 
         interval = (0,0)
         epochs_3back = mne.Epochs(raw_3back, events_3back, baseline = interval, preload = True)
+        reject_thresholds_3back = get_rejection_threshold(epochs_3back, ch_types = "eeg", verbose = False)
+        bad_epoch_3back = visualize_dropped_epochs(epochs_3back)
+        
         epochs_3back_list.append(epochs_3back)
+        bad_epoch_3back_list.append(bad_epoch_0back)
 
     eeg_epochs_coupling.append(epochs_0back_list)
     eeg_epochs_coupling.append(epochs_1back_list)
     eeg_epochs_coupling.append(epochs_2back_list)
     eeg_epochs_coupling.append(epochs_3back_list)
 
-    #print("This is the length eeg_epochs", len(eeg_epochs_coupling))
-    #print("This is the length eeg_epochs", eeg_epochs_coupling)
+    eeg_bad_epochs.append(bad_epoch_0back_list)
+    eeg_bad_epochs.append(bad_epoch_1back_list)
+    eeg_bad_epochs.append(bad_epoch_2back_list)
+    eeg_bad_epochs.append(bad_epoch_3back_list)
 
     return eeg_epochs_coupling
 
-def characterization_fNIRS(raw, epoch_duration):
+def characterization_fNIRS(raw, epoch_duration, bad_epochs):
     
     # Dictionary to store trigger data
     trigger_data = {
@@ -253,11 +294,14 @@ def characterization_fNIRS(raw, epoch_duration):
     epochs_2back_list = list()
     epochs_3back_list = list()
 
-    for i in delay:
+    for i, bad in zip(delay, bad_epochs):
         events_0back = mne.make_fixed_length_events(raw_0back, start = 0 , stop = 58 + epoch_duration - i, duration = epoch_duration)
         
         interval = (0,0)
         epochs_0back = mne.Epochs(raw_0back, events_0back, baseline = interval, preload = True)
+
+        epochs_0back.drop(bad[0][0:-1])
+
         epochs_0back_list.append(epochs_0back)
 
     for i in delay:
@@ -265,6 +309,8 @@ def characterization_fNIRS(raw, epoch_duration):
 
         interval = (0,0)
         epochs_1back = mne.Epochs(raw_1back, events_1back, baseline = interval, preload = True)
+        epochs_1back.drop(bad[1][0:-1])
+
         epochs_1back_list.append(epochs_1back)
 
     for i in delay:
@@ -272,6 +318,8 @@ def characterization_fNIRS(raw, epoch_duration):
 
         interval = (0,0)
         epochs_2back = mne.Epochs(raw_2back, events_2back, baseline = interval, preload = True)
+        epochs_2back.drop(bad[2][0:-1])
+
         epochs_2back_list.append(epochs_2back)
 
     for i in delay:
@@ -279,15 +327,14 @@ def characterization_fNIRS(raw, epoch_duration):
 
         interval = (0,0)
         epochs_3back = mne.Epochs(raw_3back, events_3back, baseline = interval, preload = True)
+        epochs_3back.drop(bad[3][0:-1])
+
         epochs_3back_list.append(epochs_3back)
 
     fnirs_epochs_coupling.append(epochs_0back_list)
     fnirs_epochs_coupling.append(epochs_1back_list)
     fnirs_epochs_coupling.append(epochs_2back_list)
     fnirs_epochs_coupling.append(epochs_3back_list)
-
-    #print("This is the length eeg_epochs", len(eeg_epochs_coupling))
-    #print("This is the length eeg_epochs", eeg_epochs_coupling)
 
     return fnirs_epochs_coupling
 
@@ -370,45 +417,98 @@ def bandpower_from_psd_ndarray(psd, freqs, band, ln_normalization = False, relat
     
     return bp
 
+
+
+# Main Execution
+#os.chdir("/Users/adriana/Documents/GitHub/thesis")
+os.chdir("H:\Dokumenter\GitHub\MasterThesis\.venv")
+mne.set_log_level('error')
+mne.set_config('MNE_BROWSER_BACKEND', 'matplotlib')
+
+#clean_raw_eeg_hc = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/healthy_controls/"
+#clean_raw_eeg_p = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/patients/"
+#clean_raw_fnirs_hc = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/healthy_controls/"
+#clean_raw_fnirs_p = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/patients/"
+
+clean_raw_eeg_hc = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_eeg\\healthy_controls\\block1\\"
+clean_raw_eeg_p = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_eeg\\patients\\block1\\"
+clean_raw_fnirs_hc = "H:\\Dokumenter\\data_acquisition\\data_fnirs\\healthy_controls\\baseline\\snirf_files\\block1\\"
+clean_raw_fnirs_p = "H:\\Dokumenter\\data_acquisition\\data_fnirs\\patients\\baseline\\snirf_files\\block1\\"
+
+file_dirs_eeg_hc, _ = read_files(clean_raw_eeg_hc, '.fif')
+file_dirs_eeg_p, _ = read_files(clean_raw_eeg_p, '.fif')
+file_dirs_fnirs_hc, _ = read_files(clean_raw_fnirs_hc, '.snirf')
+file_dirs_fnirs_p, _ = read_files(clean_raw_fnirs_p, '.snirf')
+
+bands = [(0.5, 4, 'Delta'), (4, 8, 'Theta'), (8, 12, 'Alpha'), (12, 16, 'Sigma'), (16, 30, 'Beta')]
+
+epoch_duration = 1
+delay_time = np.arange(0, 10, epoch_duration)
+
+
+
 """
 
 Process files
 
 """
 
-def process_eeg(file_dirs, epoch_duration, bands):
-    subjects = []
-    for file in file_dirs:
-        raw = mne.io.read_raw_fif(file)
-        raw.load_data()
-        epochs_eeg = characterization_eeg(raw, epoch_duration)
-        bp_relative_nback = []
-        for nback in epochs_eeg:
-            coupling_list = []
-            for segment in nback:
-                segment.drop_channels(['AF7', 'AFF5h', 'FT7', 'FC5', 'FC3', 'FCC3h', 'CCP3h', 'CCP1h', 'CP1', 
+
+subjects_hc = []
+for file_hc in file_dirs_eeg_hc:
+    raw = mne.io.read_raw_fif(file_hc)
+    raw.load_data()
+    epochs_eeg = characterization_eeg(raw, epoch_duration)
+    bp_relative_nback = []
+    for nback in epochs_eeg:
+        coupling_list = []
+        for segment in nback:
+            segment.drop_channels(['AF7', 'AFF5h', 'FT7', 'FC5', 'FC3', 'FCC3h', 'CCP3h', 'CCP1h', 'CP1', 
                                        'TP7', 'CPP3h', 'P1', 'AF8', 'AFF6h', 'FT8', 'FC6', 'FC4', 'FCC4h', 
                                        'CCP4h', 'CCP2h', 'CP2', 'P2', 'CPP4h', 'TP8'])
-                data = segment.get_data(units="uV")
-                sf = segment.info['sfreq']
-                
-                freqs, psd = welch(data, sf, nperseg=256, noverlap=0.5*256)
-                bp_relative = bandpower_from_psd_ndarray(psd, freqs, bands, ln_normalization=False, relative=True)
-                coupling_list.append(bp_relative)
-            bp_relative_nback.append(coupling_list)
+            data = segment.get_data(units="uV")
+            sf = segment.info['sfreq']
+            win = int(4 * sf)
+            freqs, psd = welch(data, sf, nperseg=win)
+            bp_relative = bandpower_from_psd_ndarray(psd, freqs, bands, ln_normalization=False, relative=True)
+            coupling_list.append(bp_relative)
+        bp_relative_nback.append(coupling_list)
         
-        subject_data = []
-        for n_back in bp_relative_nback:
-            coupling_list_bp = [np.expand_dims(coupling, axis=0) for coupling in n_back]
-            subject_data.append(coupling_list_bp)
-        subjects.append(subject_data)
-    
-    return subjects
+    subject_data_hc = []
+    for n_back in bp_relative_nback:
+        coupling_list_bp = [np.expand_dims(coupling, axis=0) for coupling in n_back]
+        subject_data_hc.append(coupling_list_bp)
+    subjects_hc.append(subject_data_hc)
+
+subjects_p = []
+for file_p in file_dirs_eeg_p:
+    raw = mne.io.read_raw_fif(file_p)
+    raw.load_data()
+    epochs_eeg = characterization_eeg(raw, epoch_duration)
+    bp_relative_nback = []
+    for nback in epochs_eeg:
+        coupling_list = []
+        for segment in nback:
+            segment.drop_channels(['AF7', 'AFF5h', 'FT7', 'FC5', 'FC3', 'FCC3h', 'CCP3h', 'CCP1h', 'CP1', 
+                                       'TP7', 'CPP3h', 'P1', 'AF8', 'AFF6h', 'FT8', 'FC6', 'FC4', 'FCC4h', 
+                                       'CCP4h', 'CCP2h', 'CP2', 'P2', 'CPP4h', 'TP8'])
+            data = segment.get_data(units="uV")
+            sf = segment.info['sfreq']
+            win = int(4 * sf)
+            freqs, psd = welch(data, sf, nperseg=win)
+            bp_relative = bandpower_from_psd_ndarray(psd, freqs, bands, ln_normalization=False, relative=True)
+            coupling_list.append(bp_relative)
+        bp_relative_nback.append(coupling_list)
+        
+    subject_data_p = []
+    for n_back in bp_relative_nback:
+        coupling_list_bp = [np.expand_dims(coupling, axis=0) for coupling in n_back]
+        subject_data_p.append(coupling_list_bp)
+    subjects_p.append(subject_data_p)
 
 def process_fnirs(file_dirs, epoch_duration):
     subjects = []
     for file in file_dirs:
-        
         raw_haemo = HemoData(file, preprocessing=True, isPloting=False).getMneIoRaw()
         epochs_fnirs = characterization_fNIRS(raw_haemo, epoch_duration)
 
@@ -452,7 +552,6 @@ def concatenate_by_delay(subjects):
                 arrays_by_shape[shape].append(coupling)
         concatenated_subject = {shape: np.concatenate(arrays, axis=0) for shape, arrays in arrays_by_shape.items()}
         concatenated_by_delay[delay_index] = concatenated_subject
-
     return concatenated_by_delay
 
 def extract_delays(concatenated_by_delay):
@@ -460,29 +559,88 @@ def extract_delays(concatenated_by_delay):
     for delay_index, subject in concatenated_by_delay.items():
         for shape, array in subject.items():
             delays[delay_index].append(array)
-
     return delays
 
 
-# Main Execution
-os.chdir("/Users/adriana/Documents/GitHub/thesis")
-mne.set_log_level('error')
-mne.set_config('MNE_BROWSER_BACKEND', 'matplotlib')
+"""
 
-clean_raw_eeg_hc = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/healthy_controls/"
-clean_raw_eeg_p = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/patients/"
-clean_raw_fnirs_hc = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/healthy_controls/"
-clean_raw_fnirs_p = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/patients/"
+Calculate means
 
-file_dirs_eeg_hc, _ = read_files(clean_raw_eeg_hc, '.fif')
-file_dirs_eeg_p, _ = read_files(clean_raw_eeg_p, '.fif')
-file_dirs_fnirs_hc, _ = read_files(clean_raw_fnirs_hc, '.snirf')
-file_dirs_fnirs_p, _ = read_files(clean_raw_fnirs_p, '.snirf')
+"""
 
-bands = [(0.5, 4, 'Delta'), (4, 8, 'Theta'), (8, 12, 'Alpha'), (12, 16, 'Sigma'), (16, 30, 'Beta')]
+def calculate_means_eeg(delays, label):
+    means_back = []
+    for delay in delays:
+        all_means = []
+        for sub_delay in delay:
 
-epoch_duration = 1
-delay_time = np.arange(0, 10, epoch_duration)
+            theta_bp_relative = sub_delay[:, 1, :, :]
+            mean = np.mean(theta_bp_relative, axis=0)
+            mean_channels = np.mean(mean, axis=-1)
+            mean_epochs = np.mean(mean_channels, axis=0)
+            all_means.append(mean_epochs) 
+
+        means_back.append(all_means)
+
+    print(f"This is the length of {label} mean: {len(means_back)}")
+
+    return means_back
+
+def calculate_means_fnirs(delays, label):
+    means_back = []
+    for delay in delays:
+        all_means = []
+        
+        for sub_delay in delay:
+            mean_hbo = sub_delay[:, :, :, 0]
+            mean_subj = np.mean(mean_hbo, axis=0)
+            mean_channels = np.mean(mean_subj, axis=-1)
+            mean_epochs = np.mean(mean_channels, axis=0)
+            all_means.append(mean_epochs) 
+
+        means_back.append(all_means)
+
+    print(f"This is the length of {label} mean: {len(means_back)}")
+
+    return means_back
+
+
+"""
+
+Plot
+
+"""
+
+def plot_means_eeg(delay_time, hc_means, p_means):
+    fig, axs = plt.subplots(2, 2, figsize=(12, 10))
+    titles = ["0back", "1back", "2back", "3back"]
+    for i, (hc_mean, p_mean, title) in enumerate(zip(hc_means, p_means, titles)):
+        ax = axs[i//2, i%2]
+        ax.plot(delay_time, p_mean, label="patients")
+        ax.plot(delay_time, hc_mean, label="healthy")
+        ax.set_xlabel("delay")
+        ax.set_ylabel("relative theta power")
+        ax.set_title(title)
+        ax.legend()
+    plt.tight_layout()
+    plt.show()
+
+def plot_means_fnirs(delay_time, hc_means, p_means):
+    fig, axs = plt.subplots(2, 2, figsize=(12, 10))
+    titles = ["0back", "1back", "2back", "3back"]
+    for i, (hc_mean, p_mean, title) in enumerate(zip(hc_means, p_means, titles)):
+        ax = axs[i//2, i%2]
+        ax.plot(delay_time, p_mean, label="patients")
+        ax.plot(delay_time, hc_mean, label="healthy")
+        ax.set_xlabel("delay")
+        ax.set_ylabel("hbo concentration")
+        ax.set_title(title)
+        ax.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+
 
 """
 EEG
@@ -497,6 +655,10 @@ eeg_concatenated_by_delay_p = concatenate_by_delay(eeg_subjects_p)
 eeg_delays_hc = extract_delays(eeg_concatenated_by_delay_hc)
 eeg_delays_p = extract_delays(eeg_concatenated_by_delay_p)
 
+eeg_hc_means = calculate_means_eeg(eeg_delays_hc, "hc_mean")
+eeg_p_means = calculate_means_eeg(eeg_delays_p, "p_mean")
+
+plot_means_eeg(delay_time, eeg_hc_means, eeg_p_means)
 
 """
 fNIRS
@@ -511,87 +673,9 @@ fnirs_concatenated_by_delay_p = concatenate_by_delay(fnirs_subjects_p)
 fnirs_delays_hc = extract_delays(fnirs_concatenated_by_delay_hc)
 fnirs_delays_p = extract_delays(fnirs_concatenated_by_delay_p)
 
-from scipy.stats import pearsonr
+fnirs_hc_means = calculate_means_fnirs(fnirs_delays_hc, "hc_mean")
+fnirs_p_means = calculate_means_fnirs(fnirs_delays_p, "p_mean")
 
-def compute_and_plot_correlations(eeg_delays, fnirs_delays, delay_time, title_suffix):
-    correlation_eeg = []
-    correlation_fnirs = []
+plot_means_fnirs(delay_time, fnirs_hc_means, fnirs_p_means)
 
-    for coupling_eeg in eeg_delays:
-        subject_corr_eeg = []
-        for subject_eeg in coupling_eeg:
-            theta = subject_eeg[:, 1, :, :]
-            mean_chann_eeg = np.mean(theta, axis=-1)
-            subject_corr_eeg.append(mean_chann_eeg)
-        
-        correlation_eeg.append(subject_corr_eeg)
 
-    for coupling_fnirs in fnirs_delays:
-        subject_corr_fnirs = []
-
-        for subject_fnirs in coupling_fnirs:
-            hbo_concentration = subject_fnirs[:, :, :, 0]
-            mean_chann_fnirs = np.mean(hbo_concentration, axis=-1)
-            subject_corr_fnirs.append(mean_chann_fnirs)
-        
-        correlation_fnirs.append(subject_corr_fnirs)
-
-    nback_corr = []
-    nback_pvalue = []
-
-    for nback_eeg_array, nback_fnirs_array in zip(correlation_eeg, correlation_fnirs):
-    
-        coupling_corr_coeff = []
-        coupling_corr_pvalue = []
-
-        for coupling_eeg_array, coupling_fnirs_array in zip(nback_eeg_array, nback_fnirs_array):
-
-            subject_correlations = []
-            subject_p_values = []
-
-            for subject_idx in range(coupling_eeg_array.shape[0]):
-                features_eeg = coupling_eeg_array[subject_idx, :]
-                features_fnirs = coupling_fnirs_array[subject_idx, :]
-
-                correlation_coefficient, p_value = pearsonr(features_eeg, features_fnirs)
-                subject_correlations.append(correlation_coefficient)
-                subject_p_values.append(p_value)
-
-            coupling_corr_coeff.append(subject_correlations)
-            coupling_corr_pvalue.append(subject_p_values)
-
-        nback_corr.append(coupling_corr_coeff)
-        nback_pvalue.append(coupling_corr_pvalue)
-
-    correlation_results = np.array(nback_corr)
-    p_values = np.array(nback_pvalue)
-
-    titles = ["0back", "1back", "2back", "3back"]
-
-    for i, title in enumerate(titles):
-        plt.figure(figsize=(14, 6))
-
-        plt.subplot(2, 1, 1)
-        for subject_idx in range(correlation_results.shape[-1]):
-            plt.plot(delay_time, correlation_results[i, :, subject_idx], label=f"Subject {subject_idx + 1}")
-        plt.xlabel("Time Delay")
-        plt.ylabel("Pearson Correlation Coefficient")
-        plt.title(f"Pearson Correlation Coefficients vs. Time Delays for Each Subject ({title_suffix})")
-        plt.legend()
-
-        plt.subplot(2, 1, 2)
-        for subject_idx in range(p_values.shape[-1]):
-            plt.plot(delay_time, p_values[i, :, subject_idx], label=f"Subject {subject_idx + 1}")
-        plt.xlabel("Time Delay")
-        plt.ylabel("p-value")
-        plt.title(f"p-values vs. Time Delays for Each Subject ({title_suffix})")
-        plt.legend()
-
-        plt.suptitle(title, y=1.02)
-        plt.tight_layout()
-        plt.show()
-
-def plot_theta_power(eeg_delay)
-
-compute_and_plot_correlations(eeg_delays_hc, fnirs_delays_hc, delay_time, "Healthy Controls")
-compute_and_plot_correlations(eeg_delays_p, fnirs_delays_p, delay_time, "Patients")

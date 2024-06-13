@@ -591,7 +591,5 @@ def compute_and_plot_correlations(eeg_delays, fnirs_delays, delay_time, title_su
         plt.tight_layout()
         plt.show()
 
-def plot_theta_power(eeg_delay)
-
 compute_and_plot_correlations(eeg_delays_hc, fnirs_delays_hc, delay_time, "Healthy Controls")
 compute_and_plot_correlations(eeg_delays_p, fnirs_delays_p, delay_time, "Patients")
