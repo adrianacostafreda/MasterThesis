@@ -12,10 +12,10 @@ from sklearn.cluster import KMeans
 from mne.viz import plot_alignment
 from mne.viz import Brain
 
-from basic.arrange_files import read_files
-from neurovascular_coupling.Hemo import HemoData
-#from arrange_files import read_files
-#from Hemo import HemoData
+#from basic.arrange_files import read_files
+#from neurovascular_coupling.Hemo import HemoData
+from arrange_files import read_files
+from Hemo import HemoData
 
 """
 
@@ -24,25 +24,39 @@ Characterize data
 """
 
 # Function to visualize dropped epochs
-def visualize_dropped_epochs(epochs_0back, epochs_1back, epochs_2back, epochs_3back):
+def visualize_dropped_epochs(epochs_0back, epochs_1back, epochs_2back, epochs_3back, epochs_baseline_0back, epochs_baseline_1back, epochs_baseline_2back, epochs_baseline_3back):
 
     dropped_epochs_indices = []
 
     # Step 4: Retrieve the indices of the dropped epochs
+    dropped_epochs_indices_baseline_0back = epochs_baseline_0back.drop_log
+    dropped_epochs_indices_baseline_1back = epochs_baseline_1back.drop_log
+    dropped_epochs_indices_baseline_2back = epochs_baseline_2back.drop_log
+    dropped_epochs_indices_baseline_3back = epochs_baseline_3back.drop_log
+
     dropped_epochs_indices_0back = epochs_0back.drop_log
     dropped_epochs_indices_1back = epochs_1back.drop_log
     dropped_epochs_indices_2back = epochs_2back.drop_log
     dropped_epochs_indices_3back = epochs_3back.drop_log
 
     # Convert the drop_log to a list of indices of dropped epochs
+    dropped_indices_baseline_0back = [i for i, log in enumerate(dropped_epochs_indices_baseline_0back) if len(log) > 0]
+    dropped_indices_baseline_1back = [i for i, log in enumerate(dropped_epochs_indices_baseline_1back) if len(log) > 0]
+    dropped_indices_baseline_2back = [i for i, log in enumerate(dropped_epochs_indices_baseline_2back) if len(log) > 0]
+    dropped_indices_baseline_3back = [i for i, log in enumerate(dropped_epochs_indices_baseline_3back) if len(log) > 0]
+
     dropped_indices_0back = [i for i, log in enumerate(dropped_epochs_indices_0back) if len(log) > 0]
     dropped_indices_1back = [i for i, log in enumerate(dropped_epochs_indices_1back) if len(log) > 0]
     dropped_indices_2back = [i for i, log in enumerate(dropped_epochs_indices_2back) if len(log) > 0]
     dropped_indices_3back = [i for i, log in enumerate(dropped_epochs_indices_3back) if len(log) > 0]
 
+    dropped_epochs_indices.append(dropped_indices_baseline_0back)
     dropped_epochs_indices.append(dropped_indices_0back)
+    dropped_epochs_indices.append(dropped_indices_baseline_1back)
     dropped_epochs_indices.append(dropped_indices_1back)
+    dropped_epochs_indices.append(dropped_indices_baseline_2back)
     dropped_epochs_indices.append(dropped_indices_2back)
+    dropped_epochs_indices.append(dropped_indices_baseline_3back)
     dropped_epochs_indices.append(dropped_indices_3back)
     
 
@@ -54,18 +68,18 @@ def characterization_eeg(raw, epoch_duration):
     
     # Dictionary to store trigger data
     trigger_data = {
+        '2': {'begin': [], 'end': [], 'duration': []},
         '4': {'begin': [], 'end': [], 'duration': []},
         '5': {'begin': [], 'end': [], 'duration': []},
         '6': {'begin': [], 'end': [], 'duration': []},
         '7': {'begin': [], 'end': [], 'duration': []}
     }
     annot = raw.annotations
-
     
     # Triggers 5, 6 & 7 --> 1-Back Test, 2-Back Test, 3-Back Test
     # Iterate over annotations 
     for idx, desc in enumerate(annot.description):
-        if desc in trigger_data:
+        if desc in trigger_data and desc != '2':
             begin_trigger = annot.onset[idx] 
             
             duration_trigger = annot.duration[idx] + 60 # duration of 1, 2, 3 back is 60 s
@@ -82,6 +96,27 @@ def characterization_eeg(raw, epoch_duration):
             trigger_data[desc]["end"].append(end_trigger)
             trigger_data[desc]["duration"].append(duration_trigger)
     
+    for index, annotation in enumerate(annot.description):
+        if (len(annot) == 11 and index==7):
+            begin_relax_0back = annot.onset[7]
+            duration_relax_0back = annot.duration[7] + 30
+            end_relax_0back = begin_relax_0back + duration_relax_0back
+
+            # Store trigger data in the dictionary
+            trigger_data[annotation]["begin"].append(begin_relax_0back)
+            trigger_data[annotation]["end"].append(end_relax_0back)
+            trigger_data[annotation]["duration"].append(duration_relax_0back)
+
+        elif (len(annot) == 9 and index==5):
+            begin_relax_0back = annot.onset[5]
+            duration_relax_0back = annot.duration[5] + 30
+            end_relax_0back = begin_relax_0back + duration_relax_0back
+
+            # Store trigger data in the dictionary
+            trigger_data[annotation]["begin"].append(begin_relax_0back)
+            trigger_data[annotation]["end"].append(end_relax_0back)
+            trigger_data[annotation]["duration"].append(duration_relax_0back)
+
     #----------------------------------------------------------------------------------
 
     # Determine the start of trigger 4
@@ -95,6 +130,8 @@ def characterization_eeg(raw, epoch_duration):
 
     end_time = trigger_data["4"]["begin"][0] + 48
     trigger_data["4"]["end"].append(end_time)
+
+    print("this is trigger", trigger_data)
 
     # Set new annotations for the current file
     onsets = []
@@ -119,11 +156,16 @@ def characterization_eeg(raw, epoch_duration):
     raw_new = raw.set_annotations(new_annotations)
     
     #----------------------------------------------------------------------------------
+    # consider that the instruction period is 10 seconds 
 
-    raw_0back = raw_new.copy().crop(tmin=trigger_data['4']['begin'][0], tmax=trigger_data['4']['end'][0] + 11)
-    raw_1back = raw_new.copy().crop(tmin=trigger_data['5']['begin'][0], tmax=trigger_data['5']['end'][0] + 11)
-    raw_2back = raw_new.copy().crop(tmin=trigger_data['6']['begin'][0], tmax=trigger_data['6']['end'][0] + 11)
-    raw_3back = raw_new.copy().crop(tmin=trigger_data['7']['begin'][0], tmax=trigger_data['7']['end'][0] + 1)
+    raw_baseline_0back = raw_new.copy().crop(tmin=trigger_data['2']['begin'][0] + 15, tmax=trigger_data['2']['end'][0])
+    raw_0back = raw_new.copy().crop(tmin=trigger_data['4']['begin'][0], tmax=trigger_data['4']['end'][0])
+    raw_baseline_1back = raw_new.copy().crop(tmin=trigger_data['4']['end'][0], tmax=trigger_data['4']['end'][0] + 15)
+    raw_1back = raw_new.copy().crop(tmin=trigger_data['5']['begin'][0], tmax=trigger_data['5']['end'][0])
+    raw_baseline_2back = raw_new.copy().crop(tmin=trigger_data['5']['end'][0], tmax=trigger_data['5']['end'][0] + 15)
+    raw_2back = raw_new.copy().crop(tmin=trigger_data['6']['begin'][0], tmax=trigger_data['6']['end'][0])
+    raw_baseline_3back = raw_new.copy().crop(tmin=trigger_data['6']['end'][0], tmax=trigger_data['6']['end'][0] + 15)
+    raw_3back = raw_new.copy().crop(tmin=trigger_data['7']['begin'][0], tmax=trigger_data['7']['end'][0])
 
     # Epoch data
 
@@ -133,57 +175,90 @@ def characterization_eeg(raw, epoch_duration):
     """
 
     eeg_epochs = list()
+    eeg_baseline_epochs = list()
+
     eeg_bad_epochs = list()
 
-    events_0back = mne.make_fixed_length_events(raw_0back, start = 0 , stop = 58, duration = epoch_duration)
-    events_1back = mne.make_fixed_length_events(raw_1back, start = 0 , stop = 70, duration = epoch_duration)
-    events_2back = mne.make_fixed_length_events(raw_2back, start = 0 , stop = 70, duration = epoch_duration)
+    baseline_0back = mne.make_fixed_length_events(raw_baseline_0back, start = 0 , stop = 15, duration = epoch_duration)
+    baseline_1back = mne.make_fixed_length_events(raw_baseline_1back, start = 0 , stop = 15, duration = epoch_duration)
+    baseline_2back = mne.make_fixed_length_events(raw_baseline_2back, start = 0 , stop = 15, duration = epoch_duration)
+    baseline_3back = mne.make_fixed_length_events(raw_baseline_3back, start = 0 , stop = 15, duration = epoch_duration)
+
+    events_0back = mne.make_fixed_length_events(raw_0back, start = 0 , stop = 48, duration = epoch_duration)
+    events_1back = mne.make_fixed_length_events(raw_1back, start = 0 , stop = 60, duration = epoch_duration)
+    events_2back = mne.make_fixed_length_events(raw_2back, start = 0 , stop = 60, duration = epoch_duration)
     events_3back = mne.make_fixed_length_events(raw_3back, start = 0 , stop = 60, duration = epoch_duration)
         
     interval = (0,0)
+    
+    epochs_baseline_0back = mne.Epochs(raw_baseline_0back, baseline_0back, baseline = interval, preload = True)
+    epochs_baseline_1back = mne.Epochs(raw_baseline_1back, baseline_1back, baseline = interval, preload = True)
+    epochs_baseline_2back = mne.Epochs(raw_baseline_2back, baseline_2back, baseline = interval, preload = True)
+    epochs_baseline_3back = mne.Epochs(raw_baseline_3back, baseline_3back, baseline = interval, preload = True)
+
     epochs_0back = mne.Epochs(raw_0back, events_0back, baseline = interval, preload = True)
     epochs_1back = mne.Epochs(raw_1back, events_1back, baseline = interval, preload = True)
     epochs_2back = mne.Epochs(raw_2back, events_2back, baseline = interval, preload = True)
     epochs_3back = mne.Epochs(raw_3back, events_3back, baseline = interval, preload = True)
         
     # -----------------Get-Rejection-Threshold---------------------------------
+    
+    reject_thresholds_baseline_0back = get_rejection_threshold(epochs_baseline_0back, ch_types = "eeg", verbose = False)
+    reject_thresholds_baseline_1back = get_rejection_threshold(epochs_baseline_1back, ch_types = "eeg", verbose = False)
+    reject_thresholds_baseline_2back = get_rejection_threshold(epochs_baseline_2back, ch_types = "eeg", verbose = False)
+    reject_thresholds_baseline_3back = get_rejection_threshold(epochs_baseline_3back, ch_types = "eeg", verbose = False)
+    
     reject_thresholds_0back = get_rejection_threshold(epochs_0back, ch_types = "eeg", verbose = False)
     reject_thresholds_1back = get_rejection_threshold(epochs_1back, ch_types = "eeg", verbose = False)
     reject_thresholds_2back = get_rejection_threshold(epochs_2back, ch_types = "eeg", verbose = False)
     reject_thresholds_3back = get_rejection_threshold(epochs_3back, ch_types = "eeg", verbose = False)
         
+    epochs_baseline_0back.drop_bad(reject=reject_thresholds_baseline_0back)
+    epochs_baseline_1back.drop_bad(reject=reject_thresholds_baseline_1back)
+    epochs_baseline_2back.drop_bad(reject=reject_thresholds_baseline_2back)
+    epochs_baseline_3back.drop_bad(reject=reject_thresholds_baseline_3back)
+
     epochs_0back.drop_bad(reject=reject_thresholds_0back)
     epochs_1back.drop_bad(reject=reject_thresholds_1back)
     epochs_2back.drop_bad(reject=reject_thresholds_2back)
     epochs_3back.drop_bad(reject=reject_thresholds_3back)
 
     # Visualize dropped epochs
-    bad_epoch = visualize_dropped_epochs(epochs_0back, epochs_1back, epochs_2back, epochs_3back)
-        
+    bad_epoch = visualize_dropped_epochs(epochs_0back, epochs_1back, epochs_2back, epochs_3back, epochs_baseline_0back, epochs_baseline_1back, epochs_baseline_2back, epochs_baseline_3back)
+    
     eeg_epochs.append(epochs_0back)
     eeg_epochs.append(epochs_1back)
     eeg_epochs.append(epochs_2back)
     eeg_epochs.append(epochs_3back)
 
+    eeg_baseline_epochs.append(epochs_baseline_0back)
+    eeg_baseline_epochs.append(epochs_baseline_1back)
+    eeg_baseline_epochs.append(epochs_baseline_2back)
+    eeg_baseline_epochs.append(epochs_baseline_3back)
+
     eeg_bad_epochs.append(bad_epoch)
 
-    return (eeg_epochs, eeg_bad_epochs)
+    return (eeg_epochs, eeg_baseline_epochs, eeg_bad_epochs)
 
 def characterization_fNIRS(raw, epoch_duration, bad_epochs):
     
     # Dictionary to store trigger data
     trigger_data = {
+        '2': {'begin': [], 'end': [], 'duration': []},
         '4': {'begin': [], 'end': [], 'duration': []},
         '5': {'begin': [], 'end': [], 'duration': []},
         '6': {'begin': [], 'end': [], 'duration': []},
         '7': {'begin': [], 'end': [], 'duration': []}
     }
+
     annot = raw.annotations
-        
+    
+    print("These are the annot", len(annot))
+
     # Triggers 5, 6 & 7 --> 1-Back Test, 2-Back Test, 3-Back Test
     # Iterate over annotations 
     for idx, desc in enumerate(annot.description):
-        if desc in trigger_data:
+        if desc in trigger_data and desc != '2':
             begin_trigger = annot.onset[idx] 
             duration_trigger = annot.duration[idx] + 50 # duration of 1, 2, 3 back is 60 s
             end_trigger = begin_trigger + duration_trigger
@@ -198,7 +273,28 @@ def characterization_fNIRS(raw, epoch_duration, bad_epochs):
             trigger_data[desc]["begin"].append(begin_trigger)
             trigger_data[desc]["end"].append(end_trigger)
             trigger_data[desc]["duration"].append(duration_trigger)
-    
+
+
+    for index, annotation in enumerate(annot.description):
+        if (len(annot) == 11 and index==7):
+            begin_relax_0back = annot.onset[7]
+            duration_relax_0back = annot.duration[7] + 20
+            end_relax_0back = begin_relax_0back + duration_relax_0back
+
+            # Store trigger data in the dictionary
+            trigger_data[annotation]["begin"].append(begin_relax_0back)
+            trigger_data[annotation]["end"].append(end_relax_0back)
+            trigger_data[annotation]["duration"].append(duration_relax_0back)
+        elif (len(annot) == 9 and index==5):
+            begin_relax_0back = annot.onset[5]
+            duration_relax_0back = annot.duration[5] + 20
+            end_relax_0back = begin_relax_0back + duration_relax_0back
+
+            # Store trigger data in the dictionary
+            trigger_data[annotation]["begin"].append(begin_relax_0back)
+            trigger_data[annotation]["end"].append(end_relax_0back)
+            trigger_data[annotation]["duration"].append(duration_relax_0back)
+
     #----------------------------------------------------------------------------------
 
     # Determine the start of trigger 4
@@ -212,6 +308,8 @@ def characterization_fNIRS(raw, epoch_duration, bad_epochs):
 
     end_time = trigger_data["4"]["begin"][0] + 48
     trigger_data["4"]["end"].append(end_time)
+
+    print("this is trigger data", trigger_data)
 
     # Set new annotations for the current file
     onsets = []
@@ -234,44 +332,71 @@ def characterization_fNIRS(raw, epoch_duration, bad_epochs):
     )
     
     raw_new = raw.set_annotations(new_annotations)
-    
-    #----------------------------------------------------------------------------------
+    raw_new.plot(block=True)
+    plt.show()
 
-    raw_0back = raw_new.copy().crop(tmin=trigger_data['4']['begin'][0], tmax=trigger_data['4']['end'][0] + 11)
-    raw_1back = raw_new.copy().crop(tmin=trigger_data['5']['begin'][0], tmax=trigger_data['5']['end'][0] + 11)
-    raw_2back = raw_new.copy().crop(tmin=trigger_data['6']['begin'][0], tmax=trigger_data['6']['end'][0] + 11)
-    raw_3back = raw_new.copy().crop(tmin=trigger_data['7']['begin'][0], tmax=trigger_data['7']['end'][0] + 1)
+    #----------------------------------------------------------------------------------
+    # we will consider that the instructions last 15 seconds 
+      
+    raw_baseline_0back = raw_new.copy().crop(tmin=trigger_data['2']['begin'][0] + 15, tmax=trigger_data['2']['end'][0])
+    raw_0back = raw_new.copy().crop(tmin=trigger_data['4']['begin'][0], tmax=trigger_data['4']['end'][0])
+    raw_baseline_1back = raw_new.copy().crop(tmin=trigger_data['4']['end'][0], tmax=trigger_data['4']['end'][0] + 15)
+    raw_1back = raw_new.copy().crop(tmin=trigger_data['5']['begin'][0], tmax=trigger_data['5']['end'][0])
+    raw_baseline_2back = raw_new.copy().crop(tmin=trigger_data['5']['end'][0], tmax=trigger_data['5']['end'][0] + 15)
+    raw_2back = raw_new.copy().crop(tmin=trigger_data['6']['begin'][0], tmax=trigger_data['6']['end'][0])
+    raw_baseline_3back = raw_new.copy().crop(tmin=trigger_data['6']['end'][0], tmax=trigger_data['6']['end'][0] + 15)
+    raw_3back = raw_new.copy().crop(tmin=trigger_data['7']['begin'][0], tmax=trigger_data['7']['end'][0])
 
     # Epoch data
 
-
     fnirs_epochs = list()
+    fnirs_baseline_epochs = list()
 
     for bad in bad_epochs:
         #print("This is bad", bad)
 
-        events_0back = mne.make_fixed_length_events(raw_0back, start = 0, stop= 58, duration = epoch_duration)
-        events_1back = mne.make_fixed_length_events(raw_1back, start = 0, stop= 70, duration = epoch_duration)
-        events_2back = mne.make_fixed_length_events(raw_2back, start = 0, stop= 70, duration = epoch_duration)
-        events_3back = mne.make_fixed_length_events(raw_3back, start = 0, stop= 60, duration = epoch_duration)
-        
+        baseline_0back = mne.make_fixed_length_events(raw_baseline_0back, start = 0 , stop = 15, duration = epoch_duration)
+        baseline_1back = mne.make_fixed_length_events(raw_baseline_1back, start = 0 , stop = 15, duration = epoch_duration)
+        baseline_2back = mne.make_fixed_length_events(raw_baseline_2back, start = 0 , stop = 15, duration = epoch_duration)
+        baseline_3back = mne.make_fixed_length_events(raw_baseline_3back, start = 0 , stop = 15, duration = epoch_duration)
+
+        events_0back = mne.make_fixed_length_events(raw_0back, start = 0 , stop = 48, duration = epoch_duration)
+        events_1back = mne.make_fixed_length_events(raw_1back, start = 0 , stop = 60, duration = epoch_duration)
+        events_2back = mne.make_fixed_length_events(raw_2back, start = 0 , stop = 60, duration = epoch_duration)
+        events_3back = mne.make_fixed_length_events(raw_3back, start = 0 , stop = 60, duration = epoch_duration)
+            
         interval = (0,0)
+        
+        epochs_baseline_0back = mne.Epochs(raw_baseline_0back, baseline_0back, baseline = interval, preload = True)
+        epochs_baseline_1back = mne.Epochs(raw_baseline_1back, baseline_1back, baseline = interval, preload = True)
+        epochs_baseline_2back = mne.Epochs(raw_baseline_2back, baseline_2back, baseline = interval, preload = True)
+        epochs_baseline_3back = mne.Epochs(raw_baseline_3back, baseline_3back, baseline = interval, preload = True)
+
         epochs_0back = mne.Epochs(raw_0back, events_0back, baseline = interval, preload = True)
         epochs_1back = mne.Epochs(raw_1back, events_1back, baseline = interval, preload = True)
         epochs_2back = mne.Epochs(raw_2back, events_2back, baseline = interval, preload = True)
         epochs_3back = mne.Epochs(raw_3back, events_3back, baseline = interval, preload = True)
 
-        epochs_0back.drop(bad[0][0:-1])
-        epochs_1back.drop(bad[1][0:-1])
-        epochs_2back.drop(bad[2][0:-1])
-        epochs_3back.drop(bad[3][0:-1])
+        epochs_baseline_0back.drop(bad[0][0:-1])
+        epochs_0back.drop(bad[1][0:-1])
+        epochs_baseline_1back.drop(bad[2][0:-1])
+        epochs_1back.drop(bad[3][0:-1])
+        epochs_baseline_2back.drop(bad[4][0:-1])
+        epochs_2back.drop(bad[5][0:-1])
+        epochs_baseline_3back.drop(bad[6][0:-1])
+        epochs_3back.drop(bad[7][0:-1])
+
+        fnirs_baseline_epochs.append(epochs_baseline_0back)
+        fnirs_baseline_epochs.append(epochs_baseline_1back)
+        fnirs_baseline_epochs.append(epochs_baseline_2back)
+        fnirs_baseline_epochs.append(epochs_baseline_3back)
 
         fnirs_epochs.append(epochs_0back)
         fnirs_epochs.append(epochs_1back)
         fnirs_epochs.append(epochs_2back)
         fnirs_epochs.append(epochs_3back)
 
-    return fnirs_epochs
+    return (fnirs_epochs, fnirs_baseline_epochs)
 
 """
 
@@ -322,50 +447,72 @@ def process_fnirs_data(file_dirs_fnirs, epoch_duration, bad_epochs):
     subjects_fnirs_2back = []
     subjects_fnirs_3back = []
 
+    subjects_fnirs_baseline_0back = []
+    subjects_fnirs_baseline_1back = []
+    subjects_fnirs_baseline_2back = []
+    subjects_fnirs_baseline_3back = []
+
     for file_dir, bad_epoch in zip(file_dirs_fnirs, bad_epochs):
         
         raw_haemo = HemoData(file_dir, preprocessing=True, isPloting=False).getMneIoRaw()
         
         epochs_fnirs = characterization_fNIRS(raw_haemo, epoch_duration, bad_epoch)
 
-        features_fnirs = []
+        epochs_fnirs_nback = epochs_fnirs[0]
+        epochs_fnirs_baseline = epochs_fnirs[1]
 
-        for nback in epochs_fnirs:
-
+        features_fnirs_nback = []
+        for nback in epochs_fnirs_nback:
             raw_hbo = nback.get_data(picks=["hbo"])
 
             mean_std_per_epoch_per_channel = np.concatenate([
                 np.expand_dims(np.mean(raw_hbo, axis=-1), axis=-1),
                 np.expand_dims(np.std(raw_hbo, axis=-1), axis=-1)], axis=-1)
 
-            features_fnirs.append(mean_std_per_epoch_per_channel)
+            features_fnirs_nback.append(mean_std_per_epoch_per_channel)
         
-        subjects_fnirs_0back.append(features_fnirs[0])
-        subjects_fnirs_1back.append(features_fnirs[1])
-        subjects_fnirs_2back.append(features_fnirs[2])
-        subjects_fnirs_3back.append(features_fnirs[3])
+        subjects_fnirs_0back.append(features_fnirs_nback[0])
+        subjects_fnirs_1back.append(features_fnirs_nback[1])
+        subjects_fnirs_2back.append(features_fnirs_nback[2])
+        subjects_fnirs_3back.append(features_fnirs_nback[3])
+        
+        features_fnirs_baseline = []
+        for baseline in epochs_fnirs_baseline:
+            raw_hbo = baseline.get_data(picks=["hbo"])
 
-    return (subjects_fnirs_0back, subjects_fnirs_1back, subjects_fnirs_2back, subjects_fnirs_3back)
+            mean_std_per_epoch_per_channel = np.concatenate([
+                np.expand_dims(np.mean(raw_hbo, axis=-1), axis=-1),
+                np.expand_dims(np.std(raw_hbo, axis=-1), axis=-1)], axis=-1)
+
+            features_fnirs_baseline.append(mean_std_per_epoch_per_channel)
+        
+        subjects_fnirs_baseline_0back.append(features_fnirs_baseline[0])
+        subjects_fnirs_baseline_1back.append(features_fnirs_baseline[1])
+        subjects_fnirs_baseline_2back.append(features_fnirs_baseline[2])
+        subjects_fnirs_baseline_3back.append(features_fnirs_baseline[3])
+
+    return (subjects_fnirs_0back, subjects_fnirs_1back, subjects_fnirs_2back, subjects_fnirs_3back,
+            subjects_fnirs_baseline_0back, subjects_fnirs_baseline_1back, subjects_fnirs_baseline_2back, subjects_fnirs_baseline_3back)
 
 # Set up directories
-#os.chdir("/Users/adriana/Documents/GitHub/thesis")
-os.chdir("H:\Dokumenter\GitHub\MasterThesis\.venv")
+os.chdir("/Users/adriana/Documents/GitHub/thesis")
+#os.chdir("H:\Dokumenter\GitHub\MasterThesis\.venv")
 mne.set_log_level('error')
 mne.set_config('MNE_BROWSER_BACKEND', 'matplotlib')
 
 # EEG
-#clean_raw_eeg_hc = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/healthy_controls/"
-#clean_raw_eeg_p = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/patients/"
+clean_raw_eeg_hc = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/healthy_controls/"
+clean_raw_eeg_p = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/patients/"
 
-clean_raw_eeg_hc = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_eeg\\healthy_controls\\"
-clean_raw_eeg_p = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_eeg\\patients\\"
+#clean_raw_eeg_hc = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_eeg\\healthy_controls\\"
+#clean_raw_eeg_p = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_eeg\\patients\\"
 
 # fNIRS
-#clean_raw_fnirs_hc = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/healthy_controls/"
-#clean_raw_fnirs_p = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/patients/"
+clean_raw_fnirs_hc = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/healthy_controls/"
+clean_raw_fnirs_p = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_fnirs/patients/"
 
-clean_raw_fnirs_hc = "H:\\Dokumenter\\data_acquisition\\data_fnirs\\healthy_controls\\baseline\\snirf_files\\"
-clean_raw_fnirs_p = "H:\\Dokumenter\\data_acquisition\\data_fnirs\\patients\\baseline\\snirf_files\\"
+#clean_raw_fnirs_hc = "H:\\Dokumenter\\data_acquisition\\data_fnirs\\healthy_controls\\baseline\\snirf_files\\"
+#clean_raw_fnirs_p = "H:\\Dokumenter\\data_acquisition\\data_fnirs\\patients\\baseline\\snirf_files\\"
 
 # EEG
 file_dirs_eeg_hc, hc_eeg = read_files(clean_raw_eeg_hc, '.fif')
@@ -378,8 +525,7 @@ file_dirs_fnirs_p, _ = read_files(clean_raw_fnirs_p, '.snirf')
 bands = [(0.5, 4, 'Delta'), (4, 8, 'Theta'), (8, 12, 'Alpha'), 
          (12, 16, 'Sigma'), (16, 30, 'Beta')]
 
-epoch_duration = 1
-
+epoch_duration = 4
 
 """
 EEG
@@ -413,11 +559,15 @@ for file_hc in file_dirs_eeg_hc:
         #nback_hc.drop_channels(channel_drop)
         data_hc = nback_hc.get_data(units="uV")
 
+        print("This is the shape of data_hc", data_hc.shape)
+
         sf = nback_hc[0].info['sfreq']
         
-        nperseg = 256
-        noverlap = 0.5*256
-        freqs_hc, psd_hc = welch(data_hc, sf, nperseg=256, noverlap=0.5*256)
+        print("this is sf", sf)
+
+        nperseg = data_hc.shape[-1]
+        noverlap = 0.5*nperseg
+        freqs_hc, psd_hc = welch(data_hc, sf, nperseg=nperseg, noverlap=noverlap)
         bp = bandpower_from_psd_ndarray(psd_hc, freqs_hc, bands, ln_normalization=False, relative=True)
         bp_relative_hc.append(bp)
 
@@ -452,7 +602,7 @@ subj_p_bad_epochs = []
 for file_p in file_dirs_eeg_p:
     raw = mne.io.read_raw_fif(file_p)
     raw.load_data()
-    
+
     characterize_eeg_p = characterization_eeg(raw, epoch_duration)
 
     epochs_p = characterize_eeg_p[0]
@@ -471,9 +621,9 @@ for file_p in file_dirs_eeg_p:
 
         sf = nback_p[0].info['sfreq']
 
-        nperseg = 256
-        noverlap = 0.5*256
-        freqs_p, psd_p = welch(data_p, sf, nperseg=256, noverlap=0.5*256)
+        nperseg = 1*data_p.shape[-1]
+        noverlap = 0.5*nperseg
+        freqs_p, psd_p = welch(data_p, sf, nperseg= nperseg, noverlap=0.5*nperseg)
         bp = bandpower_from_psd_ndarray(psd_p, freqs_p, bands, ln_normalization=False, relative=True)
         bp_relative_p.append(bp)
 
