@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import os
 from autoreject import AutoReject,get_rejection_threshold
 
-from basic.arrange_files import read_files
+#from basic.arrange_files import read_files
+from arrange_files import read_files
 
 def characterization_trigger_data(raw):
     
@@ -75,8 +76,8 @@ def characterization_trigger_data(raw):
     )
     
     raw_new=raw.set_annotations(new_annotations)
-    #raw_new.plot(block=True)
-    #plt.show()
+    raw_new.plot(block=True)
+    plt.show()
     
     #----------------------------------------------------------------------------------
 
@@ -132,16 +133,17 @@ def epochs_from_raw(raw, raw_0back, raw_1back, raw_2back, raw_3back):
     return (epochs_0back, epochs_1back, epochs_2back, epochs_3back)
 
 # Set default directory
-os.chdir("H:\Dokumenter\GitHub\MasterThesis\.venv")
+#os.chdir("H:\Dokumenter\GitHub\MasterThesis\.venv")
+os.chdir("/Users/adriana/Documents/GitHub/thesis")
 mne.set_log_level('error')
 
 # Folder where to get the raw EEG files
-clean_raw_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_eeg\\patients\\"
-#clean_raw_folder =  "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/healthy_controls/"
+# clean_raw_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_eeg\\patients\\"
+clean_raw_folder =  "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/healthy_controls/"
 
 # Folder where to export the clean epochs files
-clean_epoch_folder =  "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_epochs\\patients\\"
-#clean_epoch_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg_epoch/healthy_controls/"
+#clean_epoch_folder =  "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_epochs\\patients\\"
+clean_epoch_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg_epoch/healthy_controls/"
 
 n_back = "n_back"
 
@@ -159,9 +161,6 @@ for i in range(len(file_dirs)):
     # --------------Read Raw data + Bad channel detection + Filter-------------------
     raw = mne.io.read_raw_fif(file_dirs[i])
     raw.load_data()
-
-    #raw.plot(block=True)
-    #plt.show()
         
     raw_characterization = characterization_trigger_data(raw)
 

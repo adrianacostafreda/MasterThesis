@@ -58,7 +58,7 @@ class HemoData():
 
     def preprocess(self, data: mne.io.Raw):
         """
-        Aply the preprocessing routine to the data with the raw signals. The routine includes:
+        Apply the preprocessing routine to the data with the raw signals. The routine includes:
             1.  Convert raw to optical density.
             2.  Reject and interpolate bad channels.
             3.  Short channels regression (optional).
@@ -103,13 +103,13 @@ class HemoData():
         data_od_corrected = mne.preprocessing.nirs.temporal_derivative_distribution_repair(data_od)
 
         # Convert optical density to hemoglobin
-        data_heamo = mne.preprocessing.nirs.beer_lambert_law(data_od_corrected, ppf=7)
+        data_heamo = mne.preprocessing.nirs.beer_lambert_law(data_od_corrected, ppf=0.05)
 
         # Physiological noise removal - Bandpass filtering
         iir_params = dict(order=4, ftype='butter')
         data_heamo.filter(l_freq=0.01, h_freq=None, method='iir',
             iir_params=iir_params, verbose=True)
-        data_heamo.filter(l_freq=None, h_freq=0.2, method='iir',
+        data_heamo.filter(l_freq=None, h_freq=0.4, method='iir',
             iir_params=iir_params, verbose=True)
         return data_heamo
 

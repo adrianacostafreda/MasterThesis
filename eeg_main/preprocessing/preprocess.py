@@ -8,7 +8,7 @@ from pyprep import NoisyChannels
 from mne.preprocessing import ICA
 from mne_icalabel import label_components
 
-from basic.arrange_files import read_files
+from arrange_files import read_files
 
 """
 
@@ -105,13 +105,14 @@ def repair_artifacts_ICA(raw_filt):
                 )
     ica.fit(epochs_ica[~reject_log.bad_epochs], decim=3)
 
-    #ica.plot_sources(epochs_ica, block = True)
-    #ica.plot_components()
-    #plt.show()
+    ica.plot_sources(epochs_ica, block = True)
+    ica.plot_components()
+    plt.show()
 
     ic_labels = label_components(raw_filt, ica, method="iclabel")
 
     labels = ic_labels["labels"]
+    print(ic_labels["labels"])
     
     exclude_idx = [
         idx for idx, label in enumerate(labels) if label in ["eye blink"]
@@ -314,14 +315,17 @@ def epochs_from_raw(raw, raw_0back, raw_1back, raw_2back, raw_3back, raw_baselin
 
 
 # Set default directory
-os.chdir("H:\Dokumenter\GitHub\MasterThesis\.venv")
+#os.chdir("H:\Dokumenter\GitHub\MasterThesis\.venv")
+os.chdir("/Users/adriana/Documents/GitHub/thesis")
 mne.set_log_level('error')
 
 # Folder where to get the raw EEG files
-raw_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\healthy_controls\\baseline\\raw\\"
+#raw_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\healthy_controls\\baseline\\raw\\"
+raw_folder ="/Users/adriana/Documents/DTU/thesis/data_acquisition/data_eeg/healthy_controls/"
 
 # Folder where to export the clean epochs files
-clean_folder =  "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean\\healthy_controls\\"
+#clean_folder =  "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean\\healthy_controls\\"
+clean_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/healthy_controls/"
 
 n_back = "n_back"
 baseline = "baseline"
@@ -358,9 +362,15 @@ for i in range(len(file_dirs)):
     # --------------Re-referencing EEG channels--------------------------------
     raw.load_data()
     raw = raw.set_eeg_reference(ref_channels="average")
-    """
+    raw.compute_psd(fmax=250).plot(
+    average=True, amplitude=False, exclude="bads"
+    )
+   
     # --------------Filtering--------------------------------
     raw_filt = filter_eeg(raw)
+    raw_filt.compute_psd(fmax=250).plot(
+    average=True, amplitude=False, exclude="bads"
+    )
 
     # --------------ICA artifact------------------------------
     reconst_raw = repair_artifacts_ICA(raw_filt)
@@ -405,6 +415,4 @@ for i in range(len(file_dirs)):
 
     except FileExistsError:
         pass
-"""
-
 

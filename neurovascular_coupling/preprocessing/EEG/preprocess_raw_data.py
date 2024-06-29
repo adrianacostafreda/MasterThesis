@@ -11,8 +11,8 @@ from pyprep import NoisyChannels
 from mne.preprocessing import ICA
 from mne import Annotations
 
-
-from basic.arrange_files import read_files
+#from basic.arrange_files import read_files
+from arrange_files import read_files
 
 
 """
@@ -235,17 +235,17 @@ def repair_artifacts_ICA(raw_filt):
 
 
 # Set default directory
-os.chdir("H:\Dokumenter\GitHub\MasterThesis\.venv")
-#os.chdir("/Users/adriana/Documents/GitHub/thesis/MasterThesis/")
+#os.chdir("H:\Dokumenter\GitHub\MasterThesis\.venv")
+os.chdir("/Users/adriana/Documents/GitHub/thesis/MasterThesis/")
 mne.set_log_level('error')
 
 # Folder where to get the raw EEG files
-raw_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\healthy_controls\\baseline\\raw\\"
-#raw_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_eeg/healthy_controls/"
+#raw_folder = "H:\\Dokumenter\\data_acquisition\\data_eeg\\healthy_controls\\baseline\\raw\\"
+raw_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/data_eeg/healthy_controls/"
 
 # Folder where to export the clean epochs files
-clean_raw_folder =  "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_eeg\\healthy_controls\\"
-#clean_raw_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/healthy_controls/"
+#clean_raw_folder =  "H:\\Dokumenter\\data_acquisition\\data_eeg\\clean_eeg\\healthy_controls\\"
+clean_raw_folder = "/Users/adriana/Documents/DTU/thesis/data_acquisition/clean_eeg/healthy_controls/"
 
 # Get directories of raw EEG files and set export directory for clean files
 dir_inprogress = os.path.join(raw_folder)
