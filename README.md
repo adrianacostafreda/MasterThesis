@@ -25,5 +25,9 @@ This is an EEG pipeline for resting and n-back task EEG pre-processing and analy
 
 ### Preprocessing
 
-`/eeg_main/preprocessing` - - importing raw resting state EEG (.xdf) files, re-referencing, removing bad channels, applying bandpass (e.g., 1-60 Hz) FIR filter, removing EOG noise with ICA, dividing signal into n-back task and baseline, performing epoch artefact rejection with Autoreject algorithm, exporting the cleaned EEG signals (.fif).
+`/eeg_main/preprocessing` - importing raw resting state EEG (.xdf) files, re-referencing, removing bad channels, applying bandpass (e.g., 1-60 Hz) FIR filter, removing EOG noise with ICA, dividing signal into n-back task and baseline, performing epoch artefact rejection with Autoreject algorithm, exporting the cleaned EEG signals (.fif).
+
+### Spectral analysis
+
+
 
