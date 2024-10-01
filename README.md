@@ -31,11 +31,22 @@ This is an EEG pipeline for resting and n-back task EEG pre-processing and analy
 
 `/eeg_main/spectrum/eeg_bp_classic.py` - It reads EEG clean files, calculates power spectral density (PSD) using the Welch method, and organizes the results into brain regions. Additionally, it computes the band power for specific frequency bands (Delta, Theta, Alpha, Beta) across EEG channels and brain regions. The code handles data visualization (e.g., topographic maps of band power) and saves the results as Excel files for further analysis. Results are organized into absolute and relative PSDs for channels and brain regions.
 
-`/eeg_main/spectrum/eeg_aperiodic_specific_bp.py` - This Python code is designed for analyzing EEG data using MNE-Python and the FOOOF package. This code reads the EEG clean files, calculates the PSD, and fits the FOOOF model to estimate aperiodic and periodic components of the spectrum. It visualizes the results, including the power spectrum and model fit, while also calculating bandpower metrics for specific frequency bands, such as theta. This setup is useful for neuroscience research involving the analysis of brain activity patterns.
+`/eeg_main/spectrum/eeg_aperiodic_specific_bp.py` - This Python code is designed for analyzing EEG data using MNE-Python and the FOOOF package. This code reads the EEG clean files, calculates the PSD, and fits the FOOOF model to estimate the aperiodic and periodic components of the spectrum. It visualizes the results, including the power spectrum and model fit, while also calculating bandpower metrics for specific frequency bands, such as theta. This setup is useful for neuroscience research involving the analysis of brain activity patterns.
 
 ### Entropy Complexity Measures 
 
-`/eeg_main/entropy_complexity/entropy_complexity_nback.py`- this code analyses EEG data, focusing on the Lempel-Ziv Complexity (LZC) and Multiscale Sample Entropy (MSE) metrics. The script reads clean EEG epochs, it calculates the LZC for each epoch of each channel, averaging the results to obtain a single value per subject. Similarly, it computes the MSE for each channel across all epochs, averaging these values to summarize the complexity of the EEG signals. Finally, the results, including total MSE and scale-specific MSE values, are stored in a DataFrame for further analysis.
+`/eeg_main/entropy_complexity/entropy_complexity_nback.py`- this code analyses EEG data, focusing on the Lempel-Ziv Complexity (LZC) and Multiscale Sample Entropy (MSE) metrics. The script reads clean EEG epochs, it calculates the LZC for each channel epoch, averaging the results to obtain a single value per subject. Similarly, it computes the MSE for each channel across all epochs, averaging these values to summarize the complexity of the EEG signals. Finally, the results, including total MSE and scale-specific MSE values, are stored in a DataFrame for further analysis.
+
+### EEG Feature Extraction
+
+`/eeg_main/feature_extraction/feature_extraction_no_aperiodic_features.py` - This Python script processes EEG data to analyze the relative power spectral density (PSD) of theta waves in healthy controls across various n-back tasks. The script reads pre-processed PSD data, filtering it to include only the theta frequency band. The script separates the data into different DataFrames based on the n-back conditions (0-back to 3-back) and initializes empty NumPy arrays to store power data for each condition. It iterates through the subjects for each condition, extracting and reshaping their power data into the respective arrays. Finally, it saves the processed NumPy arrays for each n-back condition to a specified directory for further analysis.
+
+`/eeg_main/feature_extraction/feature_extraction_with_fooof.py` - This code also processes EEG data to analyze Power Spectral Density (PSD) for various experimental conditions (n-back). It includes the FOOOF aperiodic components. The script extracts specific features related to different frequency bands (Theta, Delta, Alpha), particularly focusing on the theta band for FOOOF analysis. Finally, it combines the processed data, resets the indices for consistency, and exports the results as a CSV file named eeg_features.csv for further analysis.
+
+### Feature Processing 
+
+`/eeg_main/feature_processing/` - This folder contains several codes aiming to develop a multi-class linear classifier model. 
+
 
 
 
