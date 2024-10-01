@@ -43,9 +43,18 @@ This is an EEG pipeline for resting and n-back task EEG pre-processing and analy
 
 `/eeg_main/feature_extraction/feature_extraction_with_fooof.py` - This code also processes EEG data to analyze Power Spectral Density (PSD) for various experimental conditions (n-back). It includes the FOOOF aperiodic components. The script extracts specific features related to different frequency bands (Theta, Delta, Alpha), particularly focusing on the theta band for FOOOF analysis. Finally, it combines the processed data, resets the indices for consistency, and exports the results as a CSV file named eeg_features.csv for further analysis.
 
+`/eeg_main/feature_extraction/k_means.py` - This code implements k-means clustering using both a custom approach and the KMeans class from sklearn. The script loads EEG data from .npy files and evaluates the optimal number of clusters by running the k-means function multiple times and calculating average inter-cluster distances to identify the "elbow point." Results are visualized through plots showing the average inter-cluster distance and clustered data in a 2D space defined by the first two principal components. Additionally, the KMeans class is utilized to validate clustering results and generate an elbow curve for optimal cluster selection. This was done to evaluate whether the features could distinguish four groups corresponding to the n-back task. 
+
 ### Feature Processing 
 
-`/eeg_main/feature_processing/` - This folder contains several codes aiming to develop a multi-class linear classifier model. 
+`/eeg_main/feature_processing/` - This folder contains several scripts focused on developing a multi-class linear classifier model for analyzing EEG (electroencephalogram) data. This project aimed to preprocess and extract relevant features from the EEG signals to build a classifier that could effectively distinguish between the n-back tasks using the theta power in the mid-frontal cortex. Although the development of the multi-class linear classifier was a promising initial approach, it ultimately served as a preliminary test; the research trajectory evolved toward a different direction. 
+
+
+
+
+
+
+
 
 
 
