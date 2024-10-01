@@ -50,6 +50,17 @@ This is an EEG pipeline for resting and n-back task EEG pre-processing and analy
 `/eeg_main/feature_processing/` - This folder contains several scripts focused on developing a multi-class linear classifier model for analyzing EEG (electroencephalogram) data. This project aimed to preprocess and extract relevant features from the EEG signals to build a classifier that could effectively distinguish between the n-back tasks using the theta power in the mid-frontal cortex. Although the development of the multi-class linear classifier was a promising initial approach, it ultimately served as a preliminary test; the research trajectory evolved toward a different direction. 
 
 
+## fNIRS pipeline in Python
+
+`\fnirs_main`
+
+### Preprocessing
+
+`\fnirs_main\Hemo.py` - This file defines the class, which processes functional near-infrared spectroscopy (fNIRS) data from .snirf files. Upon initialization, it loads the data and performs optional preprocessing steps, including converting raw signals to optical density, rejecting and interpolating bad channels, and applying short channel regression to enhance the signal quality. The class provides methods to visualize the hemoglobin concentration data, remove short channels, and retrieve the processed data. Additionally, it implements techniques for correcting motion artifacts and filtering the data to isolate relevant frequency components. This class serves as a comprehensive tool for analyzing fNIRS data, streamlining the preprocessing workflow for further analysis or visualization.
+
+`\fnirs_main\mne_to_numpy.py` - processes fNIRS data files, utilizing the HemoData class to load and preprocess the hemoglobin signals. It iterates over the data files in a specified directory, standardizing the hemoglobin concentration data for each subject. The script constructs a multi-dimensional NumPy array to store the preprocessed data. Additionally, it saves the processed data arrays to .npy files for subsequent analysis, providing separate datasets for each event (nback task) and a combined dataset for all events.
+
+
 
 
 
