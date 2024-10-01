@@ -19,7 +19,7 @@ the study provided valuable insights into the relationship between brain activit
 
 ## EEG pipeline in Python
 
-`/eeg_main`###
+`/eeg_main`
 
 This is an EEG pipeline for resting and n-back task EEG pre-processing and analyses used at the Department of Neurology at Rigshospitalet by Adriana Costafreda. 
 
