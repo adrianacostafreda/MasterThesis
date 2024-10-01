@@ -19,15 +19,20 @@ the study provided valuable insights into the relationship between brain activit
 
 ## EEG pipeline in Python
 
-`eeg_main`
+`/eeg_main`
 
 This is an EEG pipeline for resting and n-back task EEG pre-processing and analyses used at the Department of Neurology at Rigshospitalet by Adriana Costafreda. 
 
 ### Preprocessing
 
-`/eeg_main/preprocessing` - importing raw resting state EEG (.xdf) files, re-referencing, removing bad channels, applying bandpass (e.g., 1-60 Hz) FIR filter, removing EOG noise with ICA, dividing signal into n-back task and baseline, performing epoch artefact rejection with Autoreject algorithm, exporting the cleaned EEG signals (.fif).
+`/eeg_main/preprocessing/preprocess.py` - importing raw resting state EEG (.xdf) files, re-referencing, removing bad channels, applying bandpass (e.g., 1-60 Hz) FIR filter, removing EOG noise with ICA, dividing signal into n-back task and baseline, performing epoch artefact rejection with Autoreject algorithm, exporting the cleaned EEG signals (.fif).
 
 ### Spectral analysis
+
+`/eeg_main/spectrum/eeg_bp_classic.py` - It reads EEG clean files, calculates power spectral density (PSD) using the Welch method, and organizes the results into brain regions. Additionally, it computes the band power for specific frequency bands (Delta, Theta, Alpha, Beta) across EEG channels and brain regions. The code handles data visualization (e.g., topographic maps of band power) and saves the results as Excel files for further analysis. Results are organized into absolute and relative PSDs for channels and brain regions.
+
+`/eeg_main/spectrum/eeg_aperiodic_specific_bp.py` - This Python code is designed for analyzing EEG data using MNE-Python and the FOOOF package. This code reads the EEG clean files, calculates the PSD, and fits the FOOOF model to estimate aperiodic and periodic components of the spectrum. It visualizes the results, including the power spectrum and model fit, while also calculating bandpower metrics for specific frequency bands, such as theta. This setup is useful for neuroscience research involving the analysis of brain activity patterns.
+
 
 
 
