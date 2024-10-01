@@ -16,3 +16,14 @@ The Python-based code implements signal processing tools for analyzing EEG signa
 
 The overall aim is to identify alterations in NVC as a potential biomarker for cognitive impairment in critically ill patients. Despite no statistically significant results,
 the study provided valuable insights into the relationship between brain activity, blood flow, and cognitive load.
+
+## EEG pipeline in Python
+
+`eeg_main`
+
+This is an EEG pipeline for resting and n-back task EEG pre-processing and analyses used at the Department of Neurology at Rigshospitalet by Adriana Costafreda. 
+
+### Preprocessing
+
+`/eeg_main/preprocessing` - - importing raw resting state EEG (.xdf) files, re-referencing, removing bad channels, applying bandpass (e.g., 1-60 Hz) FIR filter, removing EOG noise with ICA, dividing signal into n-back task and baseline, performing epoch artefact rejection with Autoreject algorithm, exporting the cleaned EEG signals (.fif).
+
